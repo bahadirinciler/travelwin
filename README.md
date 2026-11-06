@@ -8,11 +8,18 @@ python3 -m http.server 5173
 # http://localhost:5173
 ```
 
+## Gelir modeli
+- **Komisyon:** İşletme her satışta **%15 komisyon havuzu** açar → **%12 içerik üreticisine**, **%3 Travelwin'e**.
+- **Barter (ücretsiz konaklama):** İşletme, onaylanan her eşleşme için **sabit hizmet bedeli** öder (varsayılan ₺1.500).
+- **Hibrit:** Ücretsiz konaklama + satışlardan komisyon.
+
+Oranlar ve hizmet bedeli tek yerde tanımlı: `js/data.js` → `PRICING`.
+
 ## Akış
-1. **İşletme** teklif açar → bölge, kategori, fiyat, kazanç modeli (Komisyon / Konaklama karşılığı / Hibrit), beklenen içerikler.
+1. **İşletme** teklif açar → bölge, kategori, fiyat, kazanç modeli (Sadece Komisyon / Ücretsiz Konaklama (Barter) / Hibrit), beklenen içerikler.
 2. **Üretici** bölgesine göre teklifleri filtreler, detayına bakar, notla başvurur (min. takipçi kontrolü).
 3. İşletme başvuruyu **onaylar** → üreticiye özel kod ve affiliate link (`#/r/KOD`) oluşur.
-4. Link açıldığında **tıklama**, rezervasyon tamamlanınca **satış + ciro** kaydedilir; komisyon panellerde hesaplanır.
+4. Link açıldığında **tıklama**, rezervasyon tamamlanınca **satış + ciro** kaydedilir; havuz, üretici payı ve hizmet bedeli panellerde hesaplanır. Ana sayfadaki **kazanç simülatörü** aynı kurallarla tahmini kazancı gösterir.
 
 Sağ üstteki **Üretici / İşletme** anahtarıyla roller arasında geçiş yapılır.
 

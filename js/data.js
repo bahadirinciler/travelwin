@@ -1,6 +1,13 @@
 /* TravelWin — demo veri katmanı (localStorage). Backend gelene kadar mock "API". */
 (function () {
-  const KEY = 'travelwin:v1';
+  // v2: gelir modeli revizyonu (sabit %15 havuz) — eski demo verisi yerine yeni seed yüklenir.
+  const KEY = 'travelwin:v2';
+
+  /* ---- Gelir modeli ----
+     Komisyon: işletme satış başına %15 havuz açar → %12 içerik üreticisine, %3 Travelwin'e.
+     Barter (konaklama karşılığı): işletme eşleşme başına sabit hizmet bedeli öder.
+     Hibrit: ikisi birden. */
+  const PRICING = { POOL: 15, CREATOR: 12, PLATFORM: 3, BARTER_FEE: 1500 };
 
   const REGIONS = ['Bodrum', 'Fethiye', 'Kaş', 'Antalya', 'Kapadokya', 'Marmaris', 'Alaçatı', 'Göcek'];
   const CATEGORIES = {
@@ -11,9 +18,9 @@
     aktivite: { label: 'Aktivite', icon: 'waves' },
   };
   const MODELS = {
-    commission: { label: 'Komisyon', icon: 'percent', desc: 'Link üzerinden gelen her satıştan yüzde komisyon.' },
-    stay: { label: 'Konaklama karşılığı', icon: 'bed', desc: 'İçerik karşılığında ücretsiz konaklama / deneyim.' },
-    hybrid: { label: 'Hibrit', icon: 'sparkles', desc: 'Ücretsiz deneyim + satışlardan komisyon.' },
+    commission: { label: 'Komisyon', filter: 'Sadece Komisyon', icon: 'percent', desc: `Her satıştan %${PRICING.POOL} havuz: %${PRICING.CREATOR} üreticiye, %${PRICING.PLATFORM} Travelwin'e.` },
+    stay: { label: 'Barter', filter: 'Ücretsiz Konaklama (Barter)', icon: 'bed', desc: 'İçerik karşılığı ücretsiz konaklama; eşleşme başına sabit hizmet bedeli.' },
+    hybrid: { label: 'Hibrit', filter: 'Hibrit', icon: 'sparkles', desc: `Ücretsiz konaklama + satışlardan %${PRICING.CREATOR} üretici komisyonu.` },
   };
 
   const CURRENT = { business: 'b1', creator: 'c1' };
@@ -37,44 +44,51 @@
         {
           id: 'o1', businessId: 'b1', title: 'Deniz Manzaralı Suit — 3 Gece', category: 'otel', region: 'Bodrum',
           description: 'Gümbet koyuna bakan butik otelimizde kahvaltı dahil deniz manzaralı suit. Sezon sonu kampanyamızı tanıtacak üreticiler arıyoruz.',
-          price: 18500, model: 'hybrid', commissionRate: 10,
-          stay: { nights: 2, guests: 2 }, deliverables: ['1 Reels (min. 30 sn)', '3 Story (link sticker\'lı)', 'Google yorum'],
+          price: 18500, model: 'hybrid', stay: { nights: 2, guests: 2 },
+          deliverables: ['1 Reels (min. 30 sn)', '3 Story (link sticker\'lı)', 'Google yorum'],
           minFollowers: 10000, active: true, createdAt: now - 6 * day,
         },
         {
           id: 'o2', businessId: 'b2', title: 'Göcek 12 Ada Özel Tekne Turu', category: 'tekne', region: 'Göcek',
           description: '8 kişiye kadar özel gulet ile 12 Adalar turu. Öğle yemeği ve şnorkel ekipmanı dahil.',
-          price: 24000, model: 'commission', commissionRate: 12,
-          stay: null, deliverables: ['Link\'i bio\'da 14 gün tutmak', '2 Story'],
+          price: 24000, model: 'commission', stay: null,
+          deliverables: ['Link\'i bio\'da 14 gün tutmak', '2 Story'],
           minFollowers: 5000, active: true, createdAt: now - 3 * day,
         },
         {
           id: 'o3', businessId: 'b3', title: 'Mağara Suit + Balon Turu Paketi', category: 'otel', region: 'Kapadokya',
           description: 'Gün doğumunda balon turu ve tarihi mağara odada 2 gece. Çift içerikleri için ideal.',
-          price: 32000, model: 'stay', commissionRate: 0,
-          stay: { nights: 2, guests: 2 }, deliverables: ['1 YouTube vlog veya 2 Reels', '5 Story', 'Ham fotoğraf kullanım hakkı'],
+          price: 32000, model: 'stay', stay: { nights: 2, guests: 2 },
+          deliverables: ['1 YouTube vlog veya 2 Reels', '5 Story', 'Ham fotoğraf kullanım hakkı'],
           minFollowers: 30000, active: true, createdAt: now - 1 * day,
         },
         {
           id: 'o4', businessId: 'b4', title: 'Kaş Dalış Deneyimi (Başlangıç)', category: 'aktivite', region: 'Kaş',
           description: 'PADI eğitmenleri eşliğinde 2 dalışlık tanışma paketi. Batık ve mağara dalış noktaları.',
-          price: 3500, model: 'commission', commissionRate: 15,
-          stay: null, deliverables: ['1 TikTok / Reels', 'Link paylaşımı'],
+          price: 3500, model: 'commission', stay: null,
+          deliverables: ['1 TikTok / Reels', 'Link paylaşımı'],
           minFollowers: 3000, active: true, createdAt: now - 9 * day,
         },
         {
           id: 'o5', businessId: 'b4', title: 'Likya Yolu 3 Günlük Rehberli Yürüyüş', category: 'tur', region: 'Fethiye',
           description: 'Ölüdeniz – Kabak arası rehberli yürüyüş, pansiyon konaklama ve yemekler dahil.',
-          price: 9800, model: 'hybrid', commissionRate: 8,
-          stay: { nights: 2, guests: 1 }, deliverables: ['Blog yazısı veya YouTube videosu', '4 Story'],
+          price: 9800, model: 'hybrid', stay: { nights: 2, guests: 1 },
+          deliverables: ['Blog yazısı veya YouTube videosu', '4 Story'],
           minFollowers: 8000, active: true, createdAt: now - 12 * day,
         },
         {
           id: 'o6', businessId: 'b1', title: 'Gün Batımı Tadım Menüsü', category: 'restoran', region: 'Bodrum',
           description: 'Otelimizin teras restoranında 7 tabaklık Ege tadım menüsü ve şarap eşleşmesi.',
-          price: 2400, model: 'commission', commissionRate: 10,
-          stay: null, deliverables: ['1 Reels', '2 Story'],
+          price: 2400, model: 'commission', stay: null,
+          deliverables: ['1 Reels', '2 Story'],
           minFollowers: 5000, active: true, createdAt: now - 2 * day,
+        },
+        {
+          id: 'o7', businessId: 'b2', title: 'Marmaris Gün Batımı Yelken Turu', category: 'tekne', region: 'Marmaris',
+          description: 'Kaptanlı yelkenli ile 3 saatlik gün batımı turu; içecek ve meze ikramı dahil.',
+          price: 4200, model: 'stay', stay: { nights: 1, guests: 2 },
+          deliverables: ['1 Reels', '3 Story'],
+          minFollowers: 15000, active: true, createdAt: now - 4 * day,
         },
       ],
       applications: [
@@ -122,6 +136,7 @@
 
   let state = load();
   const uid = (p) => p + Math.random().toString(36).slice(2, 8);
+  const pct = (amount, rate) => Math.round((amount * rate) / 100);
 
   function makeCode(creator, offer) {
     const name = creator.name.split(' ')[0].toLocaleUpperCase('tr-TR')
@@ -131,7 +146,7 @@
   }
 
   const DB = {
-    REGIONS, CATEGORIES, MODELS, CURRENT,
+    REGIONS, CATEGORIES, MODELS, PRICING, CURRENT, pct,
 
     reset() { state = seed(); save(state); },
 
@@ -184,10 +199,23 @@
       const a = DB.byCode(code); if (a) { a.sales++; a.revenue += amount; save(state); } return a;
     },
 
-    commissionOf(app) {
+    /* ---- Gelir hesapları (tek kaynak) ---- */
+    hasCommission(o) { return !!o && o.model !== 'stay'; },
+    hasBarter(o) { return !!o && o.model !== 'commission'; },
+    /** Bir başvurunun gelir dağılımı: havuz (%15), üretici (%12), platform (%3), barter hizmet bedeli. */
+    split(app) {
       const o = DB.offer(app.offerId);
-      return o ? Math.round((app.revenue * (o.commissionRate || 0)) / 100) : 0;
+      const comm = DB.hasCommission(o) ? app.revenue : 0;
+      const fee = app.status === 'approved' && DB.hasBarter(o) ? PRICING.BARTER_FEE : 0;
+      return {
+        pool: pct(comm, PRICING.POOL),
+        creator: pct(comm, PRICING.CREATOR),
+        platform: pct(comm, PRICING.PLATFORM),
+        fee,
+      };
     },
+    commissionOf(app) { return DB.split(app).creator; },
+
     affiliateUrl(code) {
       return `${location.origin}${location.pathname}#/r/${code}`;
     },

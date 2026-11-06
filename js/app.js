@@ -1,6 +1,6 @@
 /* TravelWin — tek sayfa uygulama (hash router + görünümler) */
 (function () {
-  const { REGIONS, CATEGORIES, MODELS, CURRENT } = DB;
+  const { REGIONS, CATEGORIES, MODELS, PRICING, CURRENT, pct } = DB;
   const $app = document.getElementById('app');
   const $modal = document.getElementById('modal');
   const $modalCard = document.getElementById('modalCard');
@@ -11,7 +11,7 @@
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const tl = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 });
   const num = new Intl.NumberFormat('tr-TR');
-  const money = (n) => tl.format(n || 0);
+  const money = (n) => tl.format(Math.round(n || 0));
   const compact = (n) => new Intl.NumberFormat('tr-TR', { notation: 'compact', maximumFractionDigits: 1 }).format(n);
   function ago(ts) {
     const m = Math.round((Date.now() - ts) / 60000);
@@ -63,6 +63,7 @@
   /* ---------- İkon seti (çizgi ikonlar, 24px grid) ---------- */
   const ICONS = {
     users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+    userplus: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/>',
     send: '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
     wallet: '<path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>',
     bed: '<path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/>',
@@ -75,7 +76,6 @@
     link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
     pin: '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
     arrow: '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
-    gift: '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C10 3 12 8 12 8s2-5 4.5-5a2.5 2.5 0 0 1 0 5"/>',
     compass: '<circle cx="12" cy="12" r="10"/><path d="m16.24 7.76-2.12 6.36-6.36 2.12 2.12-6.36z"/>',
     utensils: '<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>',
     waves: '<path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/>',
@@ -93,16 +93,19 @@
     eye: '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
     pointer: '<path d="m4 4 7.07 17 2.51-7.39L21 11.07z"/>',
     chart: '<path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
+    info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+    calculator: '<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8"/><path d="M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"/>',
+    award: '<circle cx="12" cy="8" r="6"/><path d="M15.48 12.89 17 22l-5-3-5 3 1.52-9.11"/>',
   };
-  const ic = (name, cls = '') => `<svg class="ico ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]}</svg>`;
+  const ic = (name, cls = '') => `<svg class="ico ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ''}</svg>`;
 
   /* ---------- Küçük bileşenler ---------- */
   const cat = (o) => CATEGORIES[o.category] || { label: o.category, icon: 'pin' };
 
   function rewardChips(o) {
     const out = [];
-    if (o.model === 'commission' || o.model === 'hybrid') out.push(`<span class="chip chip-commission">${ic('percent')} %${o.commissionRate} komisyon</span>`);
-    if ((o.model === 'stay' || o.model === 'hybrid') && o.stay) out.push(`<span class="chip chip-stay">${ic('bed')} ${o.stay.nights} gece / ${o.stay.guests} kişi ücretsiz</span>`);
+    if (DB.hasCommission(o)) out.push(`<span class="chip chip-commission">${ic('percent')} %${PRICING.CREATOR} komisyon</span>`);
+    if (DB.hasBarter(o) && o.stay) out.push(`<span class="chip chip-stay">${ic('bed')} ${o.stay.nights} gece · ${o.stay.guests} kişi</span>`);
     return out.join('');
   }
 
@@ -112,10 +115,8 @@
     return `<span class="chip ${cls}">${ic(icn)} ${label}</span>`;
   }
 
-  const STAT_ICONS = { 'Affiliate ciro': 'trending', 'Ödenecek komisyon': 'percent', 'Tıklama': 'pointer', 'Aktif teklif': 'tag', 'Toplam komisyon': 'wallet', 'Konaklama hakkı': 'bed', 'Satış': 'check', 'Getirdiğin ciro': 'chart' };
-  function stat(label, value, sub = '', highlight = false) {
-    const icn = STAT_ICONS[label];
-    return `<div class="card stat ${highlight ? 'highlight' : ''}">${icn ? `<span class="stat-ico">${ic(icn)}</span>` : ''}<div class="label">${label}</div><div class="value">${value}</div>${sub ? `<div class="sub">${sub}</div>` : ''}</div>`;
+  function stat({ label, value, sub = '', icon = '', highlight = false }) {
+    return `<div class="card stat ${highlight ? 'highlight' : ''}">${icon ? `<span class="stat-ico">${ic(icon)}</span>` : ''}<div class="label">${label}</div><div class="value">${value}</div>${sub ? `<div class="sub">${sub}</div>` : ''}</div>`;
   }
 
   function linkBox(code) {
@@ -137,6 +138,7 @@
         <div class="offer-cover cover-${o.category}">
           <div class="chips"><span class="chip chip-glass">${ic(c.icon)} ${c.label}</span><span class="chip chip-glass">${ic('pin')} ${esc(o.region)}</span></div>
           <span class="cover-ico" aria-hidden="true">${ic(c.icon)}</span>
+          <span class="model-badge model-${o.model}">${ic(MODELS[o.model].icon)} ${MODELS[o.model].label}</span>
         </div>
         <div class="offer-body">
           <div class="offer-title">${esc(o.title)}</div>
@@ -178,113 +180,7 @@
     });
   }
 
-  /* ================= GÖRÜNÜMLER ================= */
-
-  /* ---------- Landing ---------- */
-  function viewHome() {
-    const offers = DB.offers({ activeOnly: true });
-    const regionCount = new Set(offers.map((o) => o.region)).size;
-    const avgRate = Math.round(offers.filter((o) => o.commissionRate).reduce((s, o, _, arr) => s + o.commissionRate / arr.length, 0));
-    const stayCount = offers.filter((o) => o.stay).length;
-
-    const flow = [
-      { icon: 'users', title: 'Eşleşme', text: 'İşletme teklifini açar, bölgedeki uygun içerik üreticileri başvurur ve onaylanır.',
-        demo: `<span class="demo-chip">${ic('building')} Mavi Koy Otel</span><span class="demo-plus">+</span><span class="demo-chip">${ic('camera')} @aysegezgin</span>` },
-      { icon: 'send', title: 'Paylaşım', text: 'Üretici, kişisel takip linkiyle deneyimi Reels, Story ya da vlog olarak paylaşır.',
-        demo: `<span class="demo-chip demo-link">${ic('link')} travelwin.app/r/AYSE-O1</span>` },
-      { icon: 'wallet', title: 'Komisyon / Konaklama', text: 'Linkten gelen her rezervasyonda komisyon işlenir ya da içerik karşılığı ücretsiz konaklanır.',
-        demo: `<span class="demo-chip demo-money">${ic('percent')} %10 komisyon</span><span class="demo-or">veya</span><span class="demo-chip demo-stay">${ic('bed')} 2 gece</span>` },
-    ];
-
-    const roleCard = (r) => `
-      <article class="role-card role-${r.key}">
-        <div class="role-glow" aria-hidden="true"></div>
-        <header class="role-head">
-          <span class="role-eyebrow">${ic(r.icon)} ${r.eyebrow}</span>
-          <h2>${r.title}</h2>
-          <p>${r.lead}</p>
-          <div class="role-tags">${r.tags.map((t) => `<span>${t}</span>`).join('')}</div>
-        </header>
-        <div class="gains">
-          ${r.gains.map((g) => `<div class="gain"><span class="gain-ico">${ic(g.icon)}</span><strong>${g.title}</strong><small>${g.text}</small></div>`).join('')}
-        </div>
-        <ol class="role-flow">
-          ${r.steps.map((s, i) => `<li><span class="rf-num">${i + 1}</span><div><strong>${s[0]}</strong><small>${s[1]}</small></div></li>`).join('')}
-        </ol>
-        <footer class="role-foot">
-          <button class="btn btn-role" data-action="go-role" data-role="${r.role}">${r.cta} ${ic('arrow')}</button>
-          <span class="role-meta">${r.meta}</span>
-        </footer>
-      </article>`;
-
-    const roles = [
-      {
-        key: 'biz', role: 'business', icon: 'building', eyebrow: 'İşletmeler için',
-        title: 'Rezervasyonlarınızı içerik üreticileriyle büyütün',
-        lead: 'Oteller, tekne turları ve deneyim sağlayıcıları için performansa dayalı pazarlama.',
-        tags: ['Otel', 'Tekne', 'Tur', 'Restoran', 'Aktivite'],
-        gains: [
-          { icon: 'percent', title: 'Satış kadar öde', text: 'Reklam bütçesi yok, sadece gerçekleşen rezervasyon.' },
-          { icon: 'trending', title: 'Yeni kitleler', text: 'Bölgenize ilgi duyan takipçilere ulaşın.' },
-          { icon: 'shield', title: 'Seçici onay', text: 'Hangi üreticiyle çalışacağınıza siz karar verin.' },
-        ],
-        steps: [
-          ['Teklifinizi yayınlayın', 'Komisyon oranı, ücretsiz konaklama veya ikisini birden sunun.'],
-          ['Başvuruları onaylayın', 'Onay anında üreticiye özel takip linki oluşur.'],
-          ['Sonuçları izleyin', 'Tıklama, rezervasyon ve ciroyu panelden canlı takip edin.'],
-        ],
-        cta: 'İşletme olarak başla', meta: `Ortalama komisyon %${avgRate || 10}`,
-      },
-      {
-        key: 'creator', role: 'creator', icon: 'camera', eyebrow: 'İçerik üreticileri için',
-        title: 'Gezdiğin yerlerden gelir ve tatil kazan',
-        lead: 'Bölgendeki işletmelerin tekliflerine başvur, paylaş, kazan.',
-        tags: ['Instagram', 'TikTok', 'YouTube', 'Blog'],
-        gains: [
-          { icon: 'wallet', title: 'Satış komisyonu', text: 'Linkinden gelen her rezervasyondan pay al.' },
-          { icon: 'bed', title: 'Ücretsiz konaklama', text: 'İçerik karşılığı otel ve deneyim fırsatları.' },
-          { icon: 'pin', title: 'Bölgesel teklifler', text: 'Rotana uygun işletmeleri tek yerde bul.' },
-        ],
-        steps: [
-          ['Teklifleri keşfet', 'Bölge, kategori ve kazanç modeline göre filtrele.'],
-          ['Başvur, linkini al', 'Onaylandığında kişisel affiliate linkin hazır.'],
-          ['Paylaş ve kazan', 'Komisyonunu ve konaklama haklarını panelden takip et.'],
-        ],
-        cta: 'Üretici olarak başla', meta: `${offers.length} aktif teklif · ${stayCount} konaklama fırsatı`,
-      },
-    ];
-
-    return `
-      <section class="how" aria-labelledby="how-title">
-        <div class="how-head">
-          <span class="eyebrow">Nasıl çalışır?</span>
-          <h1 id="how-title">Turizm işletmeleri ve içerik üreticileri için <span class="grad">tek affiliate ağı</span></h1>
-          <p>Üç adımda eşleşin, paylaşın ve kazanın. ${regionCount} bölgede ${offers.length} açık teklif.</p>
-        </div>
-        <ol class="flow">
-          ${flow.map((s, i) => `
-            <li class="flow-step">
-              <div class="flow-top"><span class="flow-ico">${ic(s.icon)}</span><span class="flow-num">0${i + 1}</span></div>
-              <h3>${s.title}</h3>
-              <p>${s.text}</p>
-              <div class="flow-demo">${s.demo}</div>
-            </li>
-            ${i < flow.length - 1 ? `<li class="flow-arrow" aria-hidden="true">${ic('arrow')}</li>` : ''}`).join('')}
-        </ol>
-      </section>
-
-      <section class="roles" aria-label="Rolünüzü seçin">
-        ${roles.map(roleCard).join('')}
-      </section>
-
-      <div class="flex section-row">
-        <h2 class="section-title">Öne çıkan teklifler</h2><span class="spacer"></span>
-        <a href="#/c/offers" class="link-arrow" data-action="go-role-link" data-role="creator">Tümünü gör ${ic('arrow')}</a>
-      </div>
-      <div class="grid grid-cards">${offers.slice(0, 3).map(offerCard).join('')}</div>`;
-  }
-
-  /* ---------- Üretici: Teklifler ---------- */
+  /* ---------- Teklif filtreleri (ana sayfa + üretici sayfası ortak) ---------- */
   const offerFilter = { region: 'all', category: 'all', model: 'all', q: '' };
 
   function filteredOffers() {
@@ -297,19 +193,272 @@
     );
   }
 
-  function offerGridHtml() {
-    const list = filteredOffers();
+  function offerGridHtml(limit) {
+    let list = filteredOffers();
+    if (limit) list = list.slice(0, limit);
     return list.length
       ? `<div class="grid grid-cards">${list.map(offerCard).join('')}</div>`
-      : empty('search', 'Eşleşen teklif yok', 'Farklı bir bölge veya filtre deneyin.');
+      : empty('search', 'Eşleşen teklif yok', 'Farklı bir kazanç modeli, bölge veya filtre deneyin.');
   }
 
+  function modelFilterBar() {
+    const all = DB.offers({ activeOnly: true });
+    const count = (k) => (k === 'all' ? all.length : all.filter((o) => o.model === k).length);
+    const opts = [['all', 'Tümü', 'grid'], ...Object.entries(MODELS).map(([k, m]) => [k, m.filter, m.icon])];
+    return `<div class="model-filter" role="group" aria-label="Kazanç modeline göre filtrele">
+      ${opts.map(([k, l, i]) => `<button class="mf-btn mf-${k} ${offerFilter.model === k ? 'active' : ''}" data-action="filter-model" data-model="${k}" aria-pressed="${offerFilter.model === k}">${ic(i)} ${l}<span class="mf-count">${count(k)}</span></button>`).join('')}
+    </div>`;
+  }
+
+  function refreshOfferGrid() {
+    const grid = document.getElementById('offerGrid');
+    if (grid) grid.innerHTML = offerGridHtml(+grid.dataset.limit || 0);
+  }
+
+  /* ================= GÖRÜNÜMLER ================= */
+
+  /* ---------- Kazanç simülatörü ---------- */
+  const sim = { role: 'creator', model: 'hybrid', revenue: 250000, nights: 2, nightValue: 6000, matches: 2 };
+  const SIM_RANGES = {
+    revenue: { label: 'Aylık affiliate ciro', min: 0, max: 2000000, step: 10000, fmt: money, for: ['commission', 'hybrid'] },
+    nights: { label: 'Eşleşme başı konaklama', min: 1, max: 7, step: 1, fmt: (n) => `${n} gece`, for: ['stay', 'hybrid'] },
+    nightValue: { label: 'Gecelik konaklama değeri', min: 1000, max: 20000, step: 500, fmt: money, for: ['stay', 'hybrid'] },
+    matches: { label: 'Aylık barter eşleşmesi', min: 1, max: 10, step: 1, fmt: (n) => `${n} eşleşme`, for: ['stay', 'hybrid'] },
+  };
+
+  function simCalc() {
+    const comm = sim.model !== 'stay';
+    const barter = sim.model !== 'commission';
+    const revenue = comm ? sim.revenue : 0;
+    const pool = pct(revenue, PRICING.POOL);
+    const creatorComm = pct(revenue, PRICING.CREATOR);
+    const platformComm = pct(revenue, PRICING.PLATFORM);
+    const fees = barter ? PRICING.BARTER_FEE * sim.matches : 0;
+    const stayValue = barter ? sim.nights * sim.nightValue * sim.matches : 0;
+    return {
+      comm, barter, revenue, pool, creatorComm, platformComm, fees, stayValue,
+      totalNights: barter ? sim.nights * sim.matches : 0,
+      creatorTotal: creatorComm + stayValue,
+      businessNet: revenue - pool - fees,
+      platformTotal: platformComm + fees,
+      roas: pool + fees ? revenue / (pool + fees) : 0,
+    };
+  }
+
+  const resRow = (label, value, cls = '') => `<div class="res-row ${cls}"><span>${label}</span><b>${value}</b></div>`;
+
+  function simResultsHtml() {
+    const r = simCalc();
+    let main;
+    if (sim.role === 'creator') {
+      main = `
+        <span class="res-label">Aylık toplam kazancın</span>
+        <strong class="res-value">${money(r.creatorTotal)}</strong>
+        <div class="res-rows">
+          ${r.comm ? resRow(`Satış komisyonu (%${PRICING.CREATOR})`, money(r.creatorComm)) : ''}
+          ${r.barter ? resRow('Ücretsiz konaklama değeri', money(r.stayValue)) : ''}
+          ${r.barter ? resRow('Toplam konaklama', `${r.totalNights} gece`) : ''}
+          ${resRow('Platform kesintisi', 'Yok — işletme öder', 'muted-row')}
+        </div>`;
+    } else {
+      main = r.comm ? `
+        <span class="res-label">Aylık net affiliate gelirin</span>
+        <strong class="res-value">${money(r.businessNet)}</strong>
+        <div class="res-rows">
+          ${resRow('Affiliate ciro', money(r.revenue))}
+          ${resRow(`Komisyon havuzu (%${PRICING.POOL})`, `− ${money(r.pool)}`, 'neg')}
+          ${r.barter ? resRow(`Barter hizmet bedeli (${sim.matches} × ${money(PRICING.BARTER_FEE)})`, `− ${money(r.fees)}`, 'neg') : ''}
+          ${r.barter ? resRow('Verilen konaklama (ayni)', `${r.totalNights} gece · ${money(r.stayValue)}`, 'muted-row') : ''}
+          ${resRow('Pazarlama getirisi (ROAS)', `${r.roas.toFixed(1).replace('.', ',')}x`, 'pos')}
+        </div>` : `
+        <span class="res-label">Aylık nakit maliyetin</span>
+        <strong class="res-value">${money(r.fees)}</strong>
+        <div class="res-rows">
+          ${resRow(`Barter hizmet bedeli (${sim.matches} × ${money(PRICING.BARTER_FEE)})`, money(r.fees))}
+          ${resRow('Verilen konaklama (ayni)', `${r.totalNights} gece · ${money(r.stayValue)}`, 'muted-row')}
+          ${resRow('Satış komisyonu', 'Yok', 'muted-row')}
+          ${resRow('Kazanılan içerik', `${sim.matches} üretici kampanyası`, 'pos')}
+        </div>`;
+    }
+
+    const other = sim.role === 'creator'
+      ? { label: 'İşletmenin net geliri', value: r.comm ? money(r.businessNet) : `${money(r.fees)} maliyet`, cls: '' }
+      : { label: 'Üreticinin kazancı', value: money(r.creatorTotal), cls: 'em' };
+
+    const split = r.comm && r.revenue > 0 ? `
+      <div class="res-split">
+        <div class="rs-bar" role="img" aria-label="Ciro dağılımı: işletme %${100 - PRICING.POOL}, üretici %${PRICING.CREATOR}, Travelwin %${PRICING.PLATFORM}">
+          <span class="rs-biz" style="flex:${100 - PRICING.POOL}"></span><span class="rs-creator" style="flex:${PRICING.CREATOR}"></span><span class="rs-platform" style="flex:${PRICING.PLATFORM}"></span>
+        </div>
+        <div class="rs-legend">
+          <span><i class="rs-biz"></i>İşletme %${100 - PRICING.POOL}</span><span><i class="rs-creator"></i>Üretici %${PRICING.CREATOR}</span><span><i class="rs-platform"></i>Travelwin %${PRICING.PLATFORM}</span>
+        </div>
+      </div>` : '';
+
+    return `
+      <div class="res-main">${main}</div>
+      ${split}
+      <div class="res-others">
+        <div class="res-mini ${other.cls}"><span>${other.label}</span><strong>${other.value}</strong></div>
+        <div class="res-mini gold"><span>Travelwin payı</span><strong>${money(r.platformTotal)}</strong></div>
+      </div>
+      <button class="btn btn-accent res-cta" data-action="go-role" data-role="${sim.role}">${sim.role === 'creator' ? 'Teklifleri keşfet' : 'İlk teklifini yayınla'} ${ic('arrow')}</button>`;
+  }
+
+  const rangeFill = (k) => {
+    const r = SIM_RANGES[k];
+    return `${(((sim[k] - r.min) / (r.max - r.min)) * 100).toFixed(1)}%`;
+  };
+
+  function simSection() {
+    const roles = [['creator', 'İçerik üreticisiyim', 'camera'], ['business', 'İşletmeyim', 'building']];
+    return `
+      <section class="sim" id="simulator" aria-labelledby="sim-title">
+        <div class="sim-head">
+          <div>
+            <span class="eyebrow eyebrow-gold">${ic('calculator')} Kazanç / komisyon simülatörü</span>
+            <h2 id="sim-title">Kazancını saniyeler içinde hesapla</h2>
+            <p>Sürgülerle ciroyu ve konaklamayı değiştir; işletme, üretici ve Travelwin paylarını anında gör.</p>
+          </div>
+          <div class="seg-toggle" role="group" aria-label="Kimin gözünden hesaplansın?">
+            ${roles.map(([k, l, i]) => `<button class="${sim.role === k ? 'active' : ''}" data-action="sim-role" data-role="${k}" aria-pressed="${sim.role === k}">${ic(i)} ${l}</button>`).join('')}
+          </div>
+        </div>
+        <div class="sim-body">
+          <div class="sim-controls">
+            <div class="sim-label">Kazanç modeli</div>
+            <div class="seg-toggle seg-full" role="group" aria-label="Kazanç modeli">
+              ${Object.entries(MODELS).map(([k, m]) => `<button class="${sim.model === k ? 'active' : ''}" data-action="sim-model" data-model="${k}" aria-pressed="${sim.model === k}">${ic(m.icon)} ${m.label}</button>`).join('')}
+            </div>
+            ${Object.entries(SIM_RANGES).map(([k, r]) => `
+              <div class="range-field" ${r.for.includes(sim.model) ? '' : 'hidden'}>
+                <div class="range-top"><label for="sim-${k}">${r.label}</label><output id="out-${k}" for="sim-${k}">${r.fmt(sim[k])}</output></div>
+                <input type="range" id="sim-${k}" data-sim="${k}" min="${r.min}" max="${r.max}" step="${r.step}" value="${sim[k]}" style="--p:${rangeFill(k)}" />
+                <div class="range-scale"><span>${r.fmt(r.min)}</span><span>${r.fmt(r.max)}</span></div>
+              </div>`).join('')}
+            <div class="pool-explainer">
+              <div class="pool-title">${ic('info')} Gelir paylaşımı nasıl işler?</div>
+              <div class="pool-bar"><span class="pb-creator" style="flex:${PRICING.CREATOR}">%${PRICING.CREATOR} üretici</span><span class="pb-platform" style="flex:${PRICING.PLATFORM}">%${PRICING.PLATFORM}</span></div>
+              <p>İşletme her satışta <b>%${PRICING.POOL} komisyon havuzu</b> açar: %${PRICING.CREATOR}'si içerik üreticisine, %${PRICING.PLATFORM}'ü Travelwin'e. Barter eşleşmelerinde işletme eşleşme başına <b>${money(PRICING.BARTER_FEE)} sabit hizmet bedeli</b> öder.</p>
+            </div>
+          </div>
+          <div class="sim-results" id="simResults" aria-live="polite">${simResultsHtml()}</div>
+        </div>
+      </section>`;
+  }
+
+  function rerenderSim() {
+    const el = document.getElementById('simulator');
+    if (el) el.outerHTML = simSection();
+  }
+
+  /* ---------- Landing ---------- */
+  function viewHome() {
+    const offers = DB.offers({ activeOnly: true });
+    const regionCount = new Set(offers.map((o) => o.region)).size;
+    const stayCount = offers.filter((o) => DB.hasBarter(o)).length;
+
+    const entries = [
+      {
+        key: 'biz', role: 'business', icon: 'building', eyebrow: 'İşletmeler için', title: 'Doluluğunu Artır',
+        lead: 'Otel, tekne, tur ve deneyim işletmeleri için performansa dayalı pazarlama.',
+        points: [
+          `Sadece gerçekleşen satışa %${PRICING.POOL} komisyon öde`,
+          'Bölgene ilgi duyan doğrulanmış üreticilerle eşleş',
+          'Rezervasyon, tıklama ve ROAS\'ı canlı izle',
+        ],
+        cta: 'İşletme olarak başla', meta: 'Otel · Tekne · Tur · Restoran',
+      },
+      {
+        key: 'creator', role: 'creator', icon: 'camera', eyebrow: 'İçerik üreticileri için', title: 'Seyahat Et & Kazan',
+        lead: 'Instagram, TikTok, YouTube ve blog üreticileri için bölgesel iş birlikleri.',
+        points: [
+          `Linkinden gelen her satıştan %${PRICING.CREATOR} komisyon`,
+          'İçerik karşılığı ücretsiz konaklama (barter)',
+          'Komisyondan platform kesintisi yok',
+        ],
+        cta: 'Üretici olarak başla', meta: `${offers.length} aktif teklif · ${stayCount} konaklama fırsatı`,
+      },
+    ];
+
+    const steps = [
+      { icon: 'userplus', title: 'Kayıt Ol', text: 'İşletme teklifini yayınlar; içerik üreticisi profilini oluşturup bölgesindeki tekliflere başvurur.',
+        demo: `<span class="demo-chip">${ic('building')} Mavi Koy Otel</span><span class="demo-chip">${ic('camera')} @aysegezgin</span>` },
+      { icon: 'link', title: 'Link Al', text: 'Başvuru onaylandığında üreticiye özel, takip edilebilir affiliate link anında oluşur.',
+        demo: `<span class="demo-chip demo-link">${ic('link')} travelwin.app/r/AYSE-O1</span>` },
+      { icon: 'send', title: 'Paylaş', text: 'Deneyim Reels, Story, vlog ya da blogda linkle paylaşılır; her tıklama ve rezervasyon kaydedilir.',
+        demo: `<span class="demo-chip">${ic('pointer')} 412 tıklama</span><span class="demo-chip">${ic('check')} 5 satış</span>` },
+      { icon: 'wallet', title: 'Komisyon Kazan', text: `Her satışta %${PRICING.POOL} havuzun %${PRICING.CREATOR}'si üreticiye geçer. Barter'da konaklama ücretsiz.`,
+        demo: `<span class="demo-chip demo-money">${ic('percent')} %${PRICING.CREATOR} üretici</span><span class="demo-chip demo-gold">${ic('bed')} 2 gece</span>` },
+    ];
+
+    return `
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <span class="hero-badge">${ic('award')} Turizme özel affiliate ağı</span>
+          <h1 id="hero-title">Doluluğu artıran, <em>seyahati kazandıran</em> iş ortaklığı</h1>
+          <p class="lead">Oteller, tekneler ve deneyim sağlayıcıları; güvenilir içerik üreticileriyle eşleşir. Şeffaf %${PRICING.POOL} komisyon havuzu, ücretsiz konaklama ve canlı performans takibi tek platformda.</p>
+          <div class="hero-stats">
+            <div><strong>%${PRICING.CREATOR}</strong><span>üretici komisyonu</span></div>
+            <div><strong>${offers.length}</strong><span>aktif teklif</span></div>
+            <div><strong>${regionCount}</strong><span>bölge</span></div>
+          </div>
+        </div>
+        <div class="entry-grid">
+          ${entries.map((e) => `
+            <article class="entry entry-${e.key}">
+              <div class="entry-top">
+                <span class="entry-ico">${ic(e.icon)}</span>
+                <div><span class="entry-eyebrow">${e.eyebrow}</span><h2>${e.title}</h2></div>
+              </div>
+              <p>${e.lead}</p>
+              <ul class="entry-points">${e.points.map((p) => `<li><span class="ep-check">${ic('check')}</span>${p}</li>`).join('')}</ul>
+              <div class="entry-foot">
+                <button class="btn btn-entry" data-action="go-role" data-role="${e.role}">${e.cta} ${ic('arrow')}</button>
+                <span class="entry-meta">${e.meta}</span>
+              </div>
+            </article>`).join('')}
+        </div>
+      </section>
+
+      <section class="how" aria-labelledby="how-title">
+        <div class="sec-head center">
+          <span class="eyebrow">Nasıl çalışır?</span>
+          <h2 id="how-title">Dört adımda kazanmaya başla</h2>
+          <p>Kayıttan komisyona kadar tüm süreç şeffaf ve takip edilebilir.</p>
+        </div>
+        <ol class="steps4">
+          ${steps.map((s, i) => `
+            <li class="step4">
+              <span class="step4-num">Adım 0${i + 1}</span>
+              <span class="step4-ico">${ic(s.icon)}</span>
+              <h3>${s.title}</h3>
+              <p>${s.text}</p>
+              <div class="flow-demo">${s.demo}</div>
+            </li>`).join('')}
+        </ol>
+      </section>
+
+      ${simSection()}
+
+      <section class="offers-sec" aria-labelledby="offers-title">
+        <div class="sec-head">
+          <div><span class="eyebrow">İlanlar</span><h2 id="offers-title">Açık iş birliği teklifleri</h2></div>
+          <a href="#/c/offers" class="link-arrow" data-action="go-role-link" data-role="creator">Tümünü gör ${ic('arrow')}</a>
+        </div>
+        ${modelFilterBar()}
+        <div id="offerGrid" data-limit="6">${offerGridHtml(6)}</div>
+      </section>`;
+  }
+
+  /* ---------- Üretici: Teklifler ---------- */
   function viewCreatorOffers() {
     const me = DB.creator(CURRENT.creator);
     return `
       <div class="page-head">
         <div><h1>Merhaba ${esc(me.name.split(' ')[0])}</h1><p>Bölgendeki işletmelerin açık iş birliği teklifleri.</p></div>
       </div>
+      ${modelFilterBar()}
       <div class="pills" role="group" aria-label="Bölge">
         ${['all', ...REGIONS].map((r) => `<button class="pill ${offerFilter.region === r ? 'active' : ''}" data-action="filter-region" data-region="${r}">${r === 'all' ? 'Tüm bölgeler' : ic('pin') + ' ' + r}</button>`).join('')}
       </div>
@@ -318,10 +467,6 @@
         <select class="select" id="catFilter" aria-label="Kategori">
           <option value="all">Tüm kategoriler</option>
           ${Object.entries(CATEGORIES).map(([k, v]) => `<option value="${k}" ${offerFilter.category === k ? 'selected' : ''}>${v.label}</option>`).join('')}
-        </select>
-        <select class="select" id="modelFilter" aria-label="Kazanç modeli">
-          <option value="all">Tüm kazanç modelleri</option>
-          ${Object.entries(MODELS).map(([k, v]) => `<option value="${k}" ${offerFilter.model === k ? 'selected' : ''}>${v.label}</option>`).join('')}
         </select>
       </div>
       <div id="offerGrid">${offerGridHtml()}</div>`;
@@ -356,10 +501,15 @@
       }
     }
 
+    const splitNote = [
+      DB.hasCommission(o) ? `Satış başına %${PRICING.POOL} havuz (${money(pct(o.price, PRICING.POOL))}): %${PRICING.CREATOR} üretici, %${PRICING.PLATFORM} Travelwin.` : '',
+      DB.hasBarter(o) ? `Barter eşleşmesinde işletme ${money(PRICING.BARTER_FEE)} sabit hizmet bedeli öder.` : '',
+    ].filter(Boolean).join(' ');
+
     openModal(`
       <div class="detail-cover cover-${o.category}"><span class="cover-ico" aria-hidden="true">${ic(c.icon)}</span></div>
       <div class="modal-head">
-        <div><div class="flex" style="margin-bottom:8px"><span class="chip">${ic(c.icon)} ${c.label}</span><span class="chip">${ic('pin')} ${esc(o.region)}</span></div>
+        <div><div class="flex" style="margin-bottom:8px"><span class="chip">${ic(c.icon)} ${c.label}</span><span class="chip">${ic('pin')} ${esc(o.region)}</span><span class="chip model-chip-${o.model}">${ic(MODELS[o.model].icon)} ${MODELS[o.model].filter}</span></div>
           <h2 style="font-size:22px">${esc(o.title)}</h2><div class="muted" style="margin-top:4px">${esc(b?.name)}</div></div>
         <button class="modal-close" data-close aria-label="Kapat">${ic('x')}</button>
       </div>
@@ -367,11 +517,11 @@
         <p style="margin:0;color:var(--ink-2)">${esc(o.description)}</p>
         <div class="kv">
           <div><span>Paket fiyatı</span><strong>${money(o.price)}</strong></div>
-          <div><span>Kazanç modeli</span><strong>${MODELS[o.model].label}</strong></div>
-          ${o.model !== 'stay' ? `<div><span>Satış başı komisyon</span><strong>%${o.commissionRate} · ${money((o.price * o.commissionRate) / 100)}</strong></div>` : ''}
-          ${o.stay ? `<div><span>Ücretsiz deneyim</span><strong>${o.stay.nights} gece · ${o.stay.guests} kişi</strong></div>` : ''}
+          ${DB.hasCommission(o) ? `<div><span>Satış başı üretici kazancı</span><strong>%${PRICING.CREATOR} · ${money(pct(o.price, PRICING.CREATOR))}</strong></div>` : ''}
+          ${o.stay && DB.hasBarter(o) ? `<div><span>Ücretsiz konaklama</span><strong>${o.stay.nights} gece · ${o.stay.guests} kişi</strong></div>` : ''}
           <div><span>Min. takipçi</span><strong>${num.format(o.minFollowers || 0)}</strong></div>
         </div>
+        <div class="info-box">${ic('info')}<span>${splitNote}</span></div>
         <div><strong>Beklenen içerikler</strong><ul class="deliverables">${o.deliverables.map((d) => `<li>${esc(d)}</li>`).join('')}</ul></div>
         ${action}
       </div>`);
@@ -387,10 +537,10 @@
       return `
         <div class="card row">
           <div class="row-icon cat-${o.category}">${ic(c.icon)}</div>
-          <div><div class="row-title">${esc(o.title)}</div><div class="row-sub">${esc(DB.business(o.businessId)?.name)} · ${esc(o.region)} · ${ago(a.createdAt)}</div></div>
+          <div><div class="row-title">${esc(o.title)}</div><div class="row-sub">${esc(DB.business(o.businessId)?.name)} · ${esc(o.region)} · ${MODELS[o.model].label} · ${ago(a.createdAt)}</div></div>
           <div class="row-actions">${statusChip(a.status)}</div>
           ${a.status === 'approved' ? `<div class="row-extra">${linkBox(a.code)}
-            <div class="mini-stats"><span>Tıklama <b>${num.format(a.clicks)}</b></span><span>Satış <b>${a.sales}</b></span><span>Ciro <b>${money(a.revenue)}</b></span><span>Komisyonun <b>${money(DB.commissionOf(a))}</b></span>${o.stay ? `<span>${ic('bed')} <b>${o.stay.nights} gece</b> konaklama hakkı</span>` : ''}</div></div>` : ''}
+            <div class="mini-stats"><span>Tıklama <b>${num.format(a.clicks)}</b></span><span>Satış <b>${a.sales}</b></span><span>Ciro <b>${money(a.revenue)}</b></span>${DB.hasCommission(o) ? `<span>Komisyonun (%${PRICING.CREATOR}) <b>${money(DB.commissionOf(a))}</b></span>` : ''}${o.stay && DB.hasBarter(o) ? `<span>${ic('bed')} <b>${o.stay.nights} gece</b> konaklama hakkı</span>` : ''}</div></div>` : ''}
         </div>`;
     }).join('');
     return `
@@ -403,22 +553,22 @@
     const approved = DB.applications({ creatorId: CURRENT.creator, status: 'approved' });
     const t = approved.reduce((acc, a) => {
       acc.clicks += a.clicks; acc.sales += a.sales; acc.revenue += a.revenue; acc.comm += DB.commissionOf(a);
-      const o = DB.offer(a.offerId); if (o?.stay) acc.nights += o.stay.nights;
+      const o = DB.offer(a.offerId); if (o?.stay && DB.hasBarter(o)) acc.nights += o.stay.nights;
       return acc;
     }, { clicks: 0, sales: 0, revenue: 0, comm: 0, nights: 0 });
     const conv = t.clicks ? ((t.sales / t.clicks) * 100).toFixed(1) : '0';
     return `
-      <div class="page-head"><div><h1>Kazançlar</h1><p>Komisyon ve konaklama karşılığı kazanımlarının özeti.</p></div></div>
+      <div class="page-head"><div><h1>Kazançlar</h1><p>Komisyon (%${PRICING.CREATOR}) ve konaklama karşılığı kazanımlarının özeti. Komisyonundan platform kesintisi yapılmaz.</p></div></div>
       <div class="grid grid-stats">
-        ${stat('Toplam komisyon', money(t.comm), 'Ödeme bekleyen', true)}
-        ${stat('Konaklama hakkı', `${t.nights} gece`, 'İçerik karşılığı')}
-        ${stat('Tıklama', num.format(t.clicks))}
-        ${stat('Satış', num.format(t.sales), `Dönüşüm %${conv}`)}
-        ${stat('Getirdiğin ciro', money(t.revenue))}
+        ${stat({ label: `Toplam komisyon (%${PRICING.CREATOR})`, value: money(t.comm), sub: 'Ödeme bekleyen', icon: 'wallet', highlight: true })}
+        ${stat({ label: 'Konaklama hakkı', value: `${t.nights} gece`, sub: 'Barter / hibrit', icon: 'bed' })}
+        ${stat({ label: 'Tıklama', value: num.format(t.clicks), icon: 'pointer' })}
+        ${stat({ label: 'Satış', value: num.format(t.sales), sub: `Dönüşüm %${conv}`, icon: 'check' })}
+        ${stat({ label: 'Getirdiğin ciro', value: money(t.revenue), icon: 'trending' })}
       </div>
       <h2 class="section-title">İş birliği bazında</h2>
       ${approved.length ? `<div class="card table-wrap"><table>
-        <thead><tr><th>Teklif</th><th>Model</th><th class="num">Tıklama</th><th class="num">Satış</th><th class="num">Ciro</th><th class="num">Komisyon</th></tr></thead>
+        <thead><tr><th>Teklif</th><th>Model</th><th class="num">Tıklama</th><th class="num">Satış</th><th class="num">Ciro</th><th class="num">Komisyon (%${PRICING.CREATOR})</th></tr></thead>
         <tbody>${approved.map((a) => { const o = DB.offer(a.offerId); return `<tr><td>${esc(o?.title)}</td><td>${MODELS[o?.model]?.label || ''}</td><td class="num">${num.format(a.clicks)}</td><td class="num">${a.sales}</td><td class="num">${money(a.revenue)}</td><td class="num"><b>${money(DB.commissionOf(a))}</b></td></tr>`; }).join('')}</tbody>
       </table></div>` : empty('wallet', 'Henüz onaylı iş birliği yok', 'Başvurun onaylandığında kazançların burada görünür.')}`;
   }
@@ -430,20 +580,24 @@
     const apps = DB.applications({ businessId: biz.id });
     const approved = apps.filter((a) => a.status === 'approved');
     const pending = apps.filter((a) => a.status === 'pending');
-    const revenue = approved.reduce((s, a) => s + a.revenue, 0);
-    const comm = approved.reduce((s, a) => s + DB.commissionOf(a), 0);
-    const clicks = approved.reduce((s, a) => s + a.clicks, 0);
-    const sales = approved.reduce((s, a) => s + a.sales, 0);
+    const sum = approved.reduce((acc, a) => {
+      const s = DB.split(a);
+      acc.revenue += a.revenue; acc.clicks += a.clicks; acc.sales += a.sales;
+      acc.pool += s.pool; acc.creator += s.creator; acc.platform += s.platform;
+      if (s.fee) { acc.fees += s.fee; acc.barter++; }
+      return acc;
+    }, { revenue: 0, clicks: 0, sales: 0, pool: 0, creator: 0, platform: 0, fees: 0, barter: 0 });
     return `
       <div class="page-head">
         <div><h1>${esc(biz.name)}</h1><p class="flex" style="gap:6px">${ic('pin')} ${esc(biz.region)} · Affiliate performansınız</p></div>
         <a class="btn btn-primary" href="#/b/new">${ic('plus')} Yeni teklif</a>
       </div>
       <div class="grid grid-stats">
-        ${stat('Affiliate ciro', money(revenue), `${sales} rezervasyon`, true)}
-        ${stat('Ödenecek komisyon', money(comm))}
-        ${stat('Tıklama', num.format(clicks), clicks ? `Dönüşüm %${((sales / clicks) * 100).toFixed(1)}` : '')}
-        ${stat('Aktif teklif', offers.filter((o) => o.active).length, `${approved.length} aktif üretici`)}
+        ${stat({ label: 'Affiliate ciro', value: money(sum.revenue), sub: `${sum.sales} rezervasyon`, icon: 'trending', highlight: true })}
+        ${stat({ label: `Komisyon havuzu (%${PRICING.POOL})`, value: money(sum.pool), sub: `${money(sum.creator)} üretici · ${money(sum.platform)} Travelwin`, icon: 'percent' })}
+        ${stat({ label: 'Barter hizmet bedeli', value: money(sum.fees), sub: `${sum.barter} eşleşme × ${money(PRICING.BARTER_FEE)}`, icon: 'bed' })}
+        ${stat({ label: 'Tıklama', value: num.format(sum.clicks), sub: sum.clicks ? `Dönüşüm %${((sum.sales / sum.clicks) * 100).toFixed(1)}` : '', icon: 'pointer' })}
+        ${stat({ label: 'Aktif teklif', value: offers.filter((o) => o.active).length, sub: `${approved.length} aktif üretici`, icon: 'tag' })}
       </div>
 
       <h2 class="section-title">Onay bekleyen başvurular ${pending.length ? `(${pending.length})` : ''}</h2>
@@ -451,20 +605,22 @@
 
       <h2 class="section-title">En iyi performans gösteren üreticiler</h2>
       ${approved.length ? `<div class="card table-wrap"><table>
-        <thead><tr><th>Üretici</th><th>Teklif</th><th>Kod</th><th class="num">Tıklama</th><th class="num">Satış</th><th class="num">Ciro</th></tr></thead>
-        <tbody>${[...approved].sort((a, b) => b.revenue - a.revenue).map((a) => { const c = DB.creator(a.creatorId); const o = DB.offer(a.offerId); return `<tr><td><b>${esc(c.name)}</b> <span class="muted">${esc(c.handle)}</span></td><td>${esc(o.title)}</td><td><code>${esc(a.code)}</code></td><td class="num">${num.format(a.clicks)}</td><td class="num">${a.sales}</td><td class="num"><b>${money(a.revenue)}</b></td></tr>`; }).join('')}</tbody>
+        <thead><tr><th>Üretici</th><th>Teklif</th><th>Kod</th><th class="num">Tıklama</th><th class="num">Satış</th><th class="num">Ciro</th><th class="num">Havuz (%${PRICING.POOL})</th></tr></thead>
+        <tbody>${[...approved].sort((a, b) => b.revenue - a.revenue).map((a) => { const c = DB.creator(a.creatorId); const o = DB.offer(a.offerId); return `<tr><td><b>${esc(c.name)}</b> <span class="muted">${esc(c.handle)}</span></td><td>${esc(o.title)}</td><td><code>${esc(a.code)}</code></td><td class="num">${num.format(a.clicks)}</td><td class="num">${a.sales}</td><td class="num"><b>${money(a.revenue)}</b></td><td class="num">${money(DB.split(a).pool)}</td></tr>`; }).join('')}</tbody>
       </table></div>` : empty('chart', 'Henüz veri yok', 'Bir başvuruyu onayladığınızda performans burada görünür.')}`;
   }
 
   function appRow(a) {
     const c = DB.creator(a.creatorId);
     const o = DB.offer(a.offerId);
+    const s = DB.split(a);
+    const initials = c.name.split(' ').map((w) => w[0]).filter((ch) => /\p{L}/u.test(ch)).slice(0, 2).join('');
     return `
       <div class="card row">
-        <div class="row-icon avatar">${esc(c.name.split(' ').map((w) => w[0]).filter((ch) => /\p{L}/u.test(ch)).slice(0, 2).join(''))}</div>
+        <div class="row-icon avatar">${esc(initials)}</div>
         <div>
           <div class="row-title">${esc(c.name)} <span class="muted" style="font-weight:500">${esc(c.handle)}</span></div>
-          <div class="row-sub">${esc(c.platform)} · ${compact(c.followers)} takipçi · <b>${esc(o?.title)}</b> · ${ago(a.createdAt)}</div>
+          <div class="row-sub">${esc(c.platform)} · ${compact(c.followers)} takipçi · <b>${esc(o?.title)}</b> · ${MODELS[o?.model]?.label || ''} · ${ago(a.createdAt)}</div>
           ${a.message ? `<div style="margin-top:6px;font-size:14px;color:var(--ink-2)">“${esc(a.message)}”</div>` : ''}
         </div>
         <div class="row-actions">
@@ -472,7 +628,7 @@
             ? `<button class="btn btn-danger btn-sm" data-action="decide" data-id="${a.id}" data-ok="0">${ic('x')} Reddet</button><button class="btn btn-success btn-sm" data-action="decide" data-id="${a.id}" data-ok="1">${ic('check')} Onayla & link ver</button>`
             : statusChip(a.status)}
         </div>
-        ${a.status === 'approved' ? `<div class="row-extra">${linkBox(a.code)}<div class="mini-stats"><span>Tıklama <b>${num.format(a.clicks)}</b></span><span>Satış <b>${a.sales}</b></span><span>Ciro <b>${money(a.revenue)}</b></span><span>Komisyon <b>${money(DB.commissionOf(a))}</b></span></div></div>` : ''}
+        ${a.status === 'approved' ? `<div class="row-extra">${linkBox(a.code)}<div class="mini-stats"><span>Tıklama <b>${num.format(a.clicks)}</b></span><span>Satış <b>${a.sales}</b></span><span>Ciro <b>${money(a.revenue)}</b></span>${DB.hasCommission(o) ? `<span>Havuz (%${PRICING.POOL}) <b>${money(s.pool)}</b></span>` : ''}${s.fee ? `<span>Hizmet bedeli <b>${money(s.fee)}</b></span>` : ''}</div></div>` : ''}
       </div>`;
   }
 
@@ -500,7 +656,7 @@
         return `<div class="card row">
           <div class="row-icon cat-${o.category}">${ic(c.icon)}</div>
           <div><div class="row-title">${esc(o.title)} ${o.active ? '' : '<span class="chip">Pasif</span>'}</div>
-            <div class="row-sub">${esc(o.region)} · ${money(o.price)} · ${apps.length} başvuru (${apps.filter((a) => a.status === 'pending').length} bekleyen)</div>
+            <div class="row-sub">${esc(o.region)} · ${money(o.price)} · ${MODELS[o.model].filter} · ${apps.length} başvuru (${apps.filter((a) => a.status === 'pending').length} bekleyen)</div>
             <div class="flex" style="margin-top:8px">${rewardChips(o)}</div></div>
           <div class="row-actions">
             <button class="btn btn-ghost btn-sm" data-action="open-offer" data-id="${o.id}">${ic('eye')} Önizle</button>
@@ -525,13 +681,14 @@
 
           <div class="field full"><label>Kazanç modeli</label>
             <div class="segment">
-              ${Object.entries(MODELS).map(([k, m], i) => `<input type="radio" name="model" id="m-${k}" value="${k}" ${i === 0 ? 'checked' : ''}><label for="m-${k}"><strong>${ic(m.icon)} ${m.label}</strong>${m.desc}</label>`).join('')}
+              ${Object.entries(MODELS).map(([k, m], i) => `<input type="radio" name="model" id="m-${k}" value="${k}" ${i === 0 ? 'checked' : ''}><label for="m-${k}"><strong>${ic(m.icon)} ${m.filter}</strong>${m.desc}</label>`).join('')}
             </div>
           </div>
 
-          <div class="field" data-show="commission hybrid"><label for="f-rate">Komisyon oranı (%)</label><input class="input" id="f-rate" name="commissionRate" type="number" min="1" max="50" value="10" /><span class="hint" id="rateHint"></span></div>
+          <div class="field full" data-show="commission hybrid"><div class="info-box" id="splitInfo"></div></div>
           <div class="field" data-show="stay hybrid"><label for="f-nights">Ücretsiz gece</label><input class="input" id="f-nights" name="nights" type="number" min="1" max="14" value="2" /></div>
           <div class="field" data-show="stay hybrid"><label for="f-guests">Kişi sayısı</label><input class="input" id="f-guests" name="guests" type="number" min="1" max="10" value="2" /></div>
+          <div class="field full" data-show="stay hybrid"><div class="info-box info-gold">${ic('bed')}<span>Barter eşleşmelerinde onaylanan her üretici için <b>${money(PRICING.BARTER_FEE)} sabit hizmet bedeli</b> uygulanır.</span></div></div>
 
           <div class="field full"><label for="f-deliv">Beklenen içerikler</label><textarea class="textarea" id="f-deliv" name="deliverables" required placeholder="Her satıra bir madde&#10;1 Reels (min. 30 sn)&#10;3 Story (link sticker'lı)"></textarea><span class="hint">Her satır ayrı bir madde olarak gösterilir.</span></div>
         </div>
@@ -550,9 +707,12 @@
       el.querySelectorAll('input').forEach((i) => (i.disabled = !show));
     });
     const price = +form.price.value || 0;
-    const rate = +form.commissionRate.value || 0;
-    const hint = form.querySelector('#rateHint');
-    if (hint) hint.textContent = price && rate ? `Satış başına üreticiye ${money((price * rate) / 100)}` : '';
+    const info = form.querySelector('#splitInfo');
+    if (info) {
+      info.innerHTML = `${ic('percent')}<span>${price
+        ? `Satış başına <b>%${PRICING.POOL} havuz: ${money(pct(price, PRICING.POOL))}</b> → ${money(pct(price, PRICING.CREATOR))} üreticiye (%${PRICING.CREATOR}), ${money(pct(price, PRICING.PLATFORM))} Travelwin'e (%${PRICING.PLATFORM}).`
+        : `Her satışta toplam <b>%${PRICING.POOL} komisyon havuzu</b>: %${PRICING.CREATOR} üreticiye, %${PRICING.PLATFORM} Travelwin'e. Fiyat girince tutarlar hesaplanır.`}</span>`;
+    }
   }
 
   /* ---------- Affiliate yönlendirme / rezervasyon ---------- */
@@ -646,7 +806,23 @@
       case 'filter-region':
         offerFilter.region = el.dataset.region;
         document.querySelectorAll('[data-action="filter-region"]').forEach((p) => p.classList.toggle('active', p === el));
-        document.getElementById('offerGrid').innerHTML = offerGridHtml();
+        refreshOfferGrid();
+        break;
+      case 'filter-model':
+        offerFilter.model = el.dataset.model;
+        document.querySelectorAll('[data-action="filter-model"]').forEach((b) => {
+          b.classList.toggle('active', b === el);
+          b.setAttribute('aria-pressed', b === el);
+        });
+        refreshOfferGrid();
+        break;
+      case 'sim-role':
+        sim.role = el.dataset.role;
+        rerenderSim();
+        break;
+      case 'sim-model':
+        sim.model = el.dataset.model;
+        rerenderSim();
         break;
       case 'copy':
         copy(el.dataset.url);
@@ -680,27 +856,32 @@
   });
 
   document.addEventListener('input', (e) => {
-    if (e.target.id === 'offerSearch') {
-      offerFilter.q = e.target.value;
-      document.getElementById('offerGrid').innerHTML = offerGridHtml();
+    const t = e.target;
+    if (t.dataset.sim) {
+      const k = t.dataset.sim;
+      sim[k] = +t.value;
+      t.style.setProperty('--p', rangeFill(k));
+      document.getElementById(`out-${k}`).textContent = SIM_RANGES[k].fmt(sim[k]);
+      document.getElementById('simResults').innerHTML = simResultsHtml();
+      return;
     }
-    const form = e.target.closest('#offerForm');
+    if (t.id === 'offerSearch') {
+      offerFilter.q = t.value;
+      refreshOfferGrid();
+      return;
+    }
+    const form = t.closest('#offerForm');
     if (form) syncOfferForm(form);
-    if (e.target.id === 'b-qty') {
-      const t = document.getElementById('b-total');
-      t.textContent = money(+t.dataset.price * +e.target.value);
-    }
   });
 
   document.addEventListener('change', (e) => {
-    if (e.target.id === 'catFilter') offerFilter.category = e.target.value;
-    else if (e.target.id === 'modelFilter') offerFilter.model = e.target.value;
-    else if (e.target.id === 'b-qty') {
+    if (e.target.id === 'catFilter') {
+      offerFilter.category = e.target.value;
+      refreshOfferGrid();
+    } else if (e.target.id === 'b-qty') {
       const t = document.getElementById('b-total');
       t.textContent = money(+t.dataset.price * +e.target.value);
-      return;
-    } else return;
-    document.getElementById('offerGrid').innerHTML = offerGridHtml();
+    }
   });
 
   document.addEventListener('submit', (e) => {
@@ -728,7 +909,6 @@
         price: Math.max(1, +d.price),
         minFollowers: Math.max(0, +d.minFollowers || 0),
         model,
-        commissionRate: model === 'stay' ? 0 : Math.min(50, Math.max(1, +d.commissionRate || 0)),
         stay: model === 'commission' ? null : { nights: +d.nights || 1, guests: +d.guests || 1 },
         deliverables: d.deliverables.split('\n').map((s) => s.trim()).filter(Boolean),
       });
@@ -753,7 +933,7 @@
   );
 
   window.addEventListener('hashchange', () => { closeModal(); render(); });
-  window.addEventListener('storage', rerender); // başka sekmede (ör. "Test et") satış olunca güncelle
+  window.addEventListener('storage', (e) => { if (e.key && e.key.startsWith('travelwin:v')) rerender(); }); // başka sekmede satış olunca güncelle
 
   // Konsoldan demo verisini sıfırlamak için: TravelWin.reset()
   window.TravelWin = { reset() { DB.reset(); rerender(); toast('Demo verisi sıfırlandı'); } };
