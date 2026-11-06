@@ -432,6 +432,26 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .entry:hover { transform: translateY(-4px); box-shadow: 0 34px 60px -26px rgba(0,0,0,.6); }
 .entry::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 4px; background: linear-gradient(90deg, var(--ec), var(--ec-2)); }
 .entry-creator { --ec: var(--gold); --ec-2: var(--gold-2); --ec-soft: var(--gold-soft); --ec-ink: var(--gold-ink); }
+
+/* Kutu zeminleri: kendi çerçeve renginden degrade (zümrüt / altın) */
+.entry-biz {
+  --ec-line: #b7e3d2;
+  background:
+    radial-gradient(360px 220px at 100% 0%, rgba(63,211,168,.28), transparent 70%),
+    linear-gradient(160deg, #ffffff 0%, #ecf9f3 45%, #c9ecdd 100%);
+  border: 1px solid var(--ec-line);
+}
+.entry-creator {
+  --ec-line: #ecd8a6;
+  background:
+    radial-gradient(360px 220px at 100% 0%, rgba(226,194,122,.38), transparent 70%),
+    linear-gradient(160deg, #ffffff 0%, #fcf5e3 45%, #f1dfae 100%);
+  border: 1px solid var(--ec-line);
+}
+.entry-biz .entry-foot, .entry-creator .entry-foot { border-top-color: var(--ec-line); }
+.entry-biz .ep-check, .entry-creator .ep-check { background: rgba(255,255,255,.85); box-shadow: inset 0 0 0 1px var(--ec-line); }
+.entry-biz .entry-meta { color: var(--emerald-2); }
+.entry-creator .entry-meta { color: var(--gold-ink); }
 .entry-top { display: flex; align-items: center; gap: 14px; }
 .entry-ico {
   width: 56px; height: 56px; border-radius: 18px; flex-shrink: 0;
