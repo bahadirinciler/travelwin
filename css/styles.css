@@ -1365,3 +1365,24 @@ td.neg, .payout-sum .neg { color: #dc2626; }
 .matrix th small, .matrix td small { display: block; font-size: 11px; font-weight: 500; color: var(--ink-3); text-transform: none; letter-spacing: 0; }
 .matrix td.peak { background: var(--emerald-soft); font-weight: 700; color: var(--emerald-2); }
 .cat-select { width: 130px; flex-shrink: 0; padding: 8px 10px; font-size: 13.5px; }
+
+/* v7 — Sade simülatör */
+.hsim-out .res-row span small { display: block; font-size: 11px; color: rgba(255,255,255,.5); margin-top: 1px; }
+.hsim-net { margin-top: 2px; padding: 14px 16px; border-radius: 16px; background: rgba(16,185,129,.16); border: 1px solid rgba(52,211,153,.4); }
+.hsim-net .res-label { color: var(--emerald-3); }
+.hsim-net .res-value { margin: 4px 0 0; color: #fff; }
+.hsim-tip { display: flex; gap: 10px; align-items: flex-start; margin: 0; padding: 12px 14px; border-radius: 14px; background: var(--emerald-soft); border: 1px solid #a7f3d0; font-size: 13px; line-height: 1.5; color: var(--ink-2); }
+.hsim-tip > span:first-child { font-size: 16px; line-height: 1.3; }
+.hsim-tip b { color: var(--emerald-2); }
+.host-card { display: flex; align-items: center; gap: 14px; padding: 14px 16px; margin-bottom: 16px; border: 1px solid var(--line); }
+.host-card.on { border-color: #a7f3d0; background: linear-gradient(160deg, #fff, #ecfdf5); }
+.host-ico { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; font-size: 20px; background: var(--surface-2); color: var(--ink-3); flex-shrink: 0; }
+.host-card.on .host-ico { background: var(--emerald); color: #fff; }
+.host-txt { flex: 1; min-width: 0; }
+.host-txt b { display: block; font-size: 15px; }
+.host-txt small { color: var(--ink-2); font-size: 13px; }
+.switch { position: relative; width: 52px; height: 30px; border-radius: 999px; border: 0; cursor: pointer; background: #cbd5e1; flex-shrink: 0; transition: background .2s; }
+.switch span { position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 2px 6px rgba(15,23,42,.25); transition: transform .2s; }
+.switch[aria-checked="true"] { background: var(--emerald); }
+.switch[aria-checked="true"] span { transform: translateX(22px); }
+.switch:focus-visible { outline: 3px solid var(--emerald-soft); outline-offset: 2px; }

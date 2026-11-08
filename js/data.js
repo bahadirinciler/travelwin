@@ -273,8 +273,14 @@
     offers(filter = {}) {
       return state.offers
         .filter((o) => (filter.businessId ? o.businessId === filter.businessId : true))
-        .filter((o) => (filter.activeOnly ? o.active : true))
+        .filter((o) => (filter.activeOnly ? o.active && (DB.hasCommission(o) || DB.hasBarter(o)) : true))
         .sort((a, b) => b.createdAt - a.createdAt);
+    },
+    /** "İçerik Üretici Ağırlama" (barter) açık mı? Varsayılan: açık. */
+    hostingOn(businessId) { return DB.business(businessId)?.hosting !== false; },
+    setHosting(businessId, on) {
+      const b = DB.business(businessId); if (!b) return null;
+      b.hosting = !!on; save(state); return b.hosting;
     },
     createOffer(data) {
       const o = { id: uid('o'), active: true, createdAt: Date.now(), ...data };
@@ -405,12 +411,13 @@
 
     /* ---- Gelir hesapları (tek kaynak) ---- */
     hasCommission(o) { return !!o && o.model !== 'stay'; },
-    hasBarter(o) { return !!o && o.model !== 'commission'; },
+    // Ağırlama kapalıysa barter kısmı geçersizdir (hibrit → yalnızca komisyon, barter → yayında görünmez).
+    hasBarter(o) { return !!o && o.model !== 'commission' && DB.hostingOn(o.businessId); },
     /** Bir başvurunun gelir dağılımı (ciro = misafirin ödediği): toplam %7, elçi %5, platform %2, barter hizmet bedeli. */
     split(app) {
       const o = DB.offer(app.offerId);
       const comm = DB.hasCommission(o) ? app.revenue : 0;
-      const fee = app.status === 'approved' && DB.hasBarter(o) ? PRICING.BARTER_FEE : 0;
+      const fee = app.status === 'approved' && o && o.model !== 'commission' ? PRICING.BARTER_FEE : 0; // geçmiş eşleşme: anahtardan bağımsız
       return {
         pool: pct(comm, PRICING.TOTAL),
         creator: pct(comm, PRICING.CREATOR),

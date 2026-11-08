@@ -426,6 +426,18 @@
       { revenue: 0, creator: 0, platform: 0, net: 0, fee: 0, sales: 0, clicks: 0 });
   }
 
+  /** İçerik Üretici Ağırlama (barter) anahtarı */
+  function hostingCard(biz) {
+    const on = DB.hostingOn(biz.id);
+    return `
+      <div class="card host-card ${on ? 'on' : ''}">
+        <span class="host-ico">${ic('bed')}</span>
+        <div class="host-txt"><b>İçerik Üretici Ağırlama</b>
+          <small>${on ? 'Açık · Elçiler barter tekliflerinizi görüyor; tanıtım karşılığı konaklama talep edebilir.' : 'Kapalı · Elçiler yalnızca komisyonlu iş birliği görür. Boş dönemlerinizde açabilirsiniz.'}</small></div>
+        <button type="button" class="switch" role="switch" aria-checked="${on}" aria-label="İçerik Üretici Ağırlama" data-action="toggle-hosting"><span></span></button>
+      </div>`;
+  }
+
   function viewBusinessDashboard() {
     const biz = DB.business(CURRENT.business);
     const t = payoutTotals(payoutRows(biz.id));
@@ -437,6 +449,7 @@
         <div><h1>${esc(biz.name)}</h1><p class="flex" style="gap:6px">${ic('pin')} ${esc(biz.region)} · Turizmlink satış özeti</p></div>
         <a class="btn btn-ghost" href="hotel.html?h=${biz.id}" target="_blank" rel="noopener">${ic('external')} Rezervasyon sayfanız</a>
       </div>
+      ${hostingCard(biz)}
       <div class="grid grid-stats">
         ${stat({ label: 'Toplam ciro', value: money(t.revenue), sub: `${t.sales} onaylı rezervasyon`, icon: 'trending', highlight: true })}
         ${stat({ label: 'Bekleyen talepler', value: reqs.length, sub: '2 saat içinde yanıtlayın', icon: 'clock' })}
@@ -817,6 +830,12 @@
           .then(() => toast('Kodlu görsel indirildi'))
           .catch(() => toast('Görsel hazırlanamadı, Yalın sürümü deneyin'))
           .finally(() => { el.disabled = false; });
+        break;
+      }
+      case 'toggle-hosting': {
+        const on = DB.setHosting(CURRENT.business, !DB.hostingOn(CURRENT.business));
+        toast(on ? 'İçerik Üretici Ağırlama açıldı' : 'İçerik Üretici Ağırlama kapatıldı');
+        rerender();
         break;
       }
       case 'cal-toggle': {
