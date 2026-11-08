@@ -3,40 +3,223 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0f2342" />
-  <title>TravelWin — Turizm Affiliate Platformu</title>
+  <meta name="theme-color" content="#0a1830" />
+  <title>Turizmlink — Butik Oteller İçin Tavsiye ve Satış Ağı</title>
+  <meta name="description" content="Turizmlink: butik oteller için içerik üreticisi ve elçi tavsiyesiyle çalışan satış ağı. Toplam %7 maliyet: %5 elçiye, %2 platforma; misafire %5 davet indirimi." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/styles.css" />
 </head>
-<body>
-  <header class="topbar">
-    <a href="#/" class="brand" aria-label="TravelWin ana sayfa">
-      <span class="brand-mark">TW</span>
-      <span class="brand-name">Travel<b>Win</b></span>
-    </a>
-    <nav class="topnav" id="topnav" aria-label="Ana menü"></nav>
-    <div class="topbar-right">
-      <div class="role-switch" id="roleSwitch" role="tablist" aria-label="Rol seçimi">
-        <button data-role="creator" role="tab">Üretici</button>
-        <button data-role="business" role="tab">İşletme</button>
+<body class="landing">
+
+  <!-- ============ Navbar ============ -->
+  <header class="lnav" id="lnav">
+    <div class="lwrap lnav-in">
+      <a href="index.html" class="brand brand-light" aria-label="Turizmlink ana sayfa">
+        <span class="brand-mark">TL</span>
+        <span class="brand-name">Turizm<b>link</b></span>
+      </a>
+      <nav class="lnav-links" aria-label="Sayfa bölümleri">
+        <a href="#nasil">Nasıl çalışır</a>
+        <a href="#model">Gelir modeli</a>
+        <a href="#oteller">Oteller</a>
+        <a href="#elciler">Elçiler</a>
+      </nav>
+      <div class="lnav-cta">
+        <a class="btn btn-nav-ghost" href="extranet.html"><i data-ic="building"></i><span>Otel Girişi</span><small>Extranet</small></a>
+        <a class="btn btn-nav-gold" href="app.html"><i data-ic="camera"></i><span><span class="hide-sm">Elçi / İçerik Üretici </span><span class="show-sm">Elçi </span>Girişi</span><small>App</small></a>
       </div>
     </div>
   </header>
 
-  <main id="app" class="app" tabindex="-1"></main>
+  <main>
+    <!-- ============ Hero + simülatör ============ -->
+    <section class="lhero">
+      <div class="lwrap lhero-grid">
+        <div class="lhero-copy">
+          <span class="hero-badge"><i data-ic="award"></i> Butik otellere özel tavsiye ekonomisi</span>
+          <h1>Butik Oteller İçin <em>Yeni Nesil Tavsiye</em> ve Satış Ağı</h1>
+          <p class="lead">İçerik üreticileri ve elçiler otelinizi kendi kitlesine önerir; misafir <b>%5 davet indirimiyle</b> doğrudan size gelir. Siz yalnızca gerçekleşen satıştan <b>toplam %7</b> ödersiniz.</p>
+          <div class="lhero-actions">
+            <a class="btn btn-gold-lg" href="extranet.html">Otelimi ekle <i data-ic="arrow"></i></a>
+            <a class="btn btn-outline-lg" href="app.html">Elçi olarak katıl</a>
+          </div>
+          <ul class="lhero-trust">
+            <li><i data-ic="shield"></i> Satış yoksa komisyon yok</li>
+            <li><i data-ic="check"></i> Onaylı ön talep: son söz otelde</li>
+            <li><i data-ic="bed"></i> Barter: içerik karşılığı konaklama</li>
+          </ul>
+        </div>
 
-  <nav class="bottomnav" id="bottomnav" aria-label="Mobil menü"></nav>
+        <div class="hsim" id="hsim" aria-labelledby="hsim-title">
+          <div class="hsim-head">
+            <span class="eyebrow eyebrow-gold"><i data-ic="calculator"></i> Komisyon simülatörü</span>
+            <h2 id="hsim-title">Otelinize kalan net geliri görün</h2>
+          </div>
+          <div class="seg-toggle seg-full" role="group" aria-label="Çalışma modeli" id="hsimModel">
+            <button data-model="commission" aria-pressed="false"><i data-ic="percent"></i> Komisyon</button>
+            <button data-model="stay" aria-pressed="false"><i data-ic="bed"></i> Barter</button>
+            <button data-model="hybrid" aria-pressed="true" class="active"><i data-ic="sparkles"></i> Hibrit</button>
+          </div>
+          <div class="hsim-ranges" id="hsimRanges"></div>
+          <div class="hsim-out" id="hsimOut" aria-live="polite"></div>
+        </div>
+      </div>
+    </section>
 
-  <div class="modal" id="modal" hidden>
-    <div class="modal-backdrop" data-close></div>
-    <div class="modal-card" role="dialog" aria-modal="true" id="modalCard"></div>
-  </div>
+    <!-- ============ Güven şeridi ============ -->
+    <section class="lstrip" aria-label="Öne çıkanlar">
+      <div class="lwrap lstrip-in">
+        <div><strong>%7</strong><span>Otelin toplam maliyeti</span></div>
+        <div><strong class="em">%5</strong><span>Elçiye net komisyon</span></div>
+        <div><strong class="gold">%5</strong><span>Misafire davet indirimi</span></div>
+        <div><strong>%2</strong><span>Turizmlink hizmet bedeli</span></div>
+      </div>
+    </section>
 
-  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <!-- ============ Değer önerisi ============ -->
+    <section class="lsec lwrap" aria-labelledby="value-title">
+      <div class="sec-head center">
+        <span class="eyebrow">Kimler için?</span>
+        <h2 id="value-title">İki taraf, tek güvenilir ağ</h2>
+        <p>Butik oteller doluluğunu artırır, elçiler tavsiyelerinden kazanır, misafir daha iyi fiyata ulaşır.</p>
+      </div>
+      <div class="entry-grid">
+        <article class="entry entry-biz" id="oteller">
+          <div class="entry-top">
+            <span class="entry-ico"><i data-ic="building"></i></span>
+            <div><span class="entry-eyebrow">Butik oteller için</span><h2>Doluluğunu artır</h2></div>
+          </div>
+          <p>Reklam bütçesi yerine, sizi gerçekten deneyimlemiş elçilerin tavsiyesiyle satış yapın.</p>
+          <ul class="entry-points">
+            <li><span class="ep-check"><i data-ic="check"></i></span>Yalnızca gerçekleşen satıştan toplam %7 ödeyin.</li>
+            <li><span class="ep-check"><i data-ic="check"></i></span>Ön talepleri onaylayın, kapalı tarihleri siz belirleyin.</li>
+            <li><span class="ep-check"><i data-ic="check"></i></span>Ciroyu, elçileri ve tıklamaları tek panelden izleyin.</li>
+          </ul>
+          <div class="entry-foot">
+            <a class="btn btn-entry" href="extranet.html">Otel Girişi (Extranet) <i data-ic="arrow"></i></a>
+            <span class="entry-meta">Komisyon, barter veya hibrit</span>
+          </div>
+        </article>
 
+        <article class="entry entry-creator" id="elciler">
+          <div class="entry-top">
+            <span class="entry-ico"><i data-ic="camera"></i></span>
+            <div><span class="entry-eyebrow">Elçiler & içerik üreticileri için</span><h2>Seyahat et & kazan</h2></div>
+          </div>
+          <p>Sevdiğin butik otelleri öner, linkinle gelen her rezervasyondan kazan.</p>
+          <ul class="entry-points">
+            <li><span class="ep-check"><i data-ic="check"></i></span>Tek tıkla kişisel link üret; takipçin %5 indirim alır.</li>
+            <li><span class="ep-check"><i data-ic="check"></i></span>Her onaylı satıştan %5 net komisyon, kesinti yok.</li>
+            <li><span class="ep-check"><i data-ic="check"></i></span>Dikey video arşivin ve kazanç cüzdanın tek yerde.</li>
+          </ul>
+          <div class="entry-foot">
+            <a class="btn btn-entry" href="app.html">Elçi / İçerik Üretici Girişi (App) <i data-ic="arrow"></i></a>
+            <span class="entry-meta">Barter konaklama fırsatları</span>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ============ Gelir modeli ============ -->
+    <section class="lsec lwrap" id="model" aria-labelledby="model-title">
+      <div class="sec-head center">
+        <span class="eyebrow eyebrow-gold">Şeffaf gelir modeli</span>
+        <h2 id="model-title">Her satışta %7, herkes ne aldığını bilir</h2>
+        <p>Komisyon misafirin ödediği tutar üzerinden hesaplanır ve tamamını otel öder.</p>
+      </div>
+      <div class="mcards">
+        <div class="mcard mcard-em">
+          <span class="mcard-ico"><i data-ic="wallet"></i></span>
+          <strong>%5</strong><h3>Elçiye net komisyon</h3>
+          <p>Satışı getiren içerik üreticisinin cüzdanına, kesintisiz.</p>
+        </div>
+        <div class="mcard mcard-navy">
+          <span class="mcard-ico"><i data-ic="shield"></i></span>
+          <strong>%2</strong><h3>Turizmlink hizmet bedeli</h3>
+          <p>Takip, eşleşme, ödeme altyapısı ve destek.</p>
+        </div>
+        <div class="mcard mcard-gold">
+          <span class="mcard-ico"><i data-ic="gift"></i></span>
+          <strong>%5</strong><h3>Misafire davet indirimi</h3>
+          <p>Elçi linkiyle gelen misafir liste fiyatından doğrudan indirim alır.</p>
+        </div>
+        <div class="mcard mcard-line">
+          <span class="mcard-ico"><i data-ic="bed"></i></span>
+          <strong data-fee>₺1.500</strong><h3>Barter hizmet bedeli</h3>
+          <p>İçerik karşılığı konaklamada eşleşme başına sabit ücret.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ Nasıl çalışır ============ -->
+    <section class="lsec lwrap" id="nasil" aria-labelledby="how-title">
+      <div class="sec-head center">
+        <span class="eyebrow">Nasıl çalışır?</span>
+        <h2 id="how-title">Tavsiyeden rezervasyona 4 adım</h2>
+      </div>
+      <ol class="steps4">
+        <li class="step4"><span class="step4-num">Adım 1</span><span class="step4-ico"><i data-ic="building"></i></span><h3>Otel katılır</h3><p>Extranet'te odalarını, fiyatlarını ve çalışma modelini (komisyon / barter) belirler.</p></li>
+        <li class="step4"><span class="step4-num">Adım 2</span><span class="step4-ico"><i data-ic="link"></i></span><h3>Elçi link üretir</h3><p>App'te oteli seçer, kişisel linkini alır ve dikey videosuyla paylaşır.</p></li>
+        <li class="step4"><span class="step4-num">Adım 3</span><span class="step4-ico"><i data-ic="calendar"></i></span><h3>Misafir ön talep bırakır</h3><p>Linkle gelen misafir %5 indirimle tarih seçer ve ön talep gönderir.</p></li>
+        <li class="step4"><span class="step4-num">Adım 4</span><span class="step4-ico"><i data-ic="wallet"></i></span><h3>Otel onaylar, elçi kazanır</h3><p>Onaylanan rezervasyonda %5 komisyon elçinin cüzdanına işlenir.</p></li>
+      </ol>
+    </section>
+
+    <!-- ============ Platform ekranları ============ -->
+    <section class="lsec lwrap" aria-labelledby="portals-title">
+      <div class="sec-head center">
+        <span class="eyebrow">Platform</span>
+        <h2 id="portals-title">Her rol için ayrı ekran</h2>
+      </div>
+      <div class="portals">
+        <a class="portal" href="extranet.html">
+          <span class="portal-ico p-navy"><i data-ic="grid"></i></span>
+          <div><h3>Otel Paneli</h3><code>turizmlink.com/extranet</code></div>
+          <p>Ön talep onayları, kapalı tarihler, ciro ve elçi takibi.</p>
+          <span class="link-arrow">Extranet'e gir <i data-ic="arrow"></i></span>
+        </a>
+        <a class="portal" href="app.html">
+          <span class="portal-ico p-gold"><i data-ic="video"></i></span>
+          <div><h3>Elçi App</h3><code>turizmlink.com/app</code></div>
+          <p>Link üretme, dikey video arşivi, tıklama ve %5 kazanç cüzdanı.</p>
+          <span class="link-arrow">App'e gir <i data-ic="arrow"></i></span>
+        </a>
+        <a class="portal" href="hotel.html?ref=AYSE-DATCA">
+          <span class="portal-ico p-em"><i data-ic="calendar"></i></span>
+          <div><h3>Rezervasyon Sayfası</h3><code>turizmlink.com/hotel</code></div>
+          <p>Misafirin elçi linkiyle geldiği, %5 davet indirimli otel vitrini. Örnek: Casa Di Datça.</p>
+          <span class="link-arrow">Örneği aç <i data-ic="arrow"></i></span>
+        </a>
+      </div>
+    </section>
+
+    <!-- ============ Kapanış CTA ============ -->
+    <section class="lwrap">
+      <div class="lcta">
+        <div>
+          <h2>Otelinizi tavsiye ağına ekleyin</h2>
+          <p>Kurulumdan sonra ilk elçi başvurularını panelinizden onaylayın.</p>
+        </div>
+        <div class="lcta-btns">
+          <a class="btn btn-gold-lg" href="extranet.html">Otel Girişi (Extranet) <i data-ic="arrow"></i></a>
+          <a class="btn btn-outline-lg" href="app.html">Elçi / İçerik Üretici Girişi</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="lfoot">
+    <div class="lwrap lfoot-in">
+      <a href="index.html" class="brand" aria-label="Turizmlink ana sayfa"><span class="brand-mark">TL</span><span class="brand-name">Turizm<b>link</b></span></a>
+      <nav aria-label="Alt menü"><a href="extranet.html">Otel Girişi</a><a href="app.html">Elçi Girişi</a><a href="hotel.html">Örnek otel sayfası</a></nav>
+      <span class="muted">© <span id="year">2026</span> turizmlink.com</span>
+    </div>
+  </footer>
+
+  <script src="js/icons.js"></script>
   <script src="js/data.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/home.js"></script>
 </body>
 </html>

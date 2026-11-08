@@ -1,38 +1,39 @@
-# TravelWin — Turizm Affiliate MVP
+# Turizmlink — Butik Oteller İçin Tavsiye ve Satış Ağı (MVP)
 
-Turizm işletmeleri (otel, tekne, tur, restoran, aktivite) ile içerik üreticilerini buluşturan affiliate platformunun tıklanabilir MVP'si. Bağımlılık yok: saf HTML + CSS + JavaScript.
+turizmlink.com · statik HTML/CSS/JS, kurulum gerektirmez.
+
+## Sayfalar
+
+| Sayfa | Rol | İçerik |
+|---|---|---|
+| `index.html` | Ana vitrin | Değer önerisi, hero komisyon simülatörü, gelir modeli, 4 adım |
+| `extranet.html` | Otelci | Panel (ciro, komisyon), ön talep onayları, elçi başvuruları, teklifler |
+| `app.html` | Elçi / içerik üreticisi | Teklifler, kişisel linkler, cüzdan (%5) |
+| `hotel.html?ref=KOD` | Misafir | %5 davet indirimi bandı, otel vitrini (Casa Di Datça), ön talep takvimi |
 
 ## Çalıştırma
+
 ```bash
 python3 -m http.server 5173
 # http://localhost:5173
 ```
 
-## Gelir modeli
-- **Komisyon:** İşletme her satışta **%15 komisyon havuzu** açar → **%12 içerik üreticisine**, **%3 Travelwin'e**.
-- **Barter (ücretsiz konaklama):** İşletme, onaylanan her eşleşme için **sabit hizmet bedeli** öder (varsayılan ₺1.500).
-- **Hibrit:** Ücretsiz konaklama + satışlardan komisyon.
+## Gelir modeli (`js/data.js` → `PRICING`)
 
-Oranlar ve hizmet bedeli tek yerde tanımlı: `js/data.js` → `PRICING`.
+- Satış komisyonu: otel, misafirin ödediği tutar üzerinden **toplam %7** öder → **%5 elçiye (net)**, **%2 Turizmlink'e**.
+- Misafir: elçi linkiyle gelirse liste fiyatından **%5 doğrudan indirim**.
+- Barter: içerik karşılığı konaklama; eşleşme başına sabit hizmet bedeli (₺1.500, varsayım).
 
 ## Akış
-1. **İşletme** teklif açar → bölge, kategori, fiyat, kazanç modeli (Sadece Komisyon / Ücretsiz Konaklama (Barter) / Hibrit), beklenen içerikler.
-2. **Üretici** bölgesine göre teklifleri filtreler, detayına bakar, notla başvurur (min. takipçi kontrolü).
-3. İşletme başvuruyu **onaylar** → üreticiye özel kod ve affiliate link (`#/r/KOD`) oluşur.
-4. Link açıldığında **tıklama**, rezervasyon tamamlanınca **satış + ciro** kaydedilir; havuz, üretici payı ve hizmet bedeli panellerde hesaplanır. Ana sayfadaki **kazanç simülatörü** aynı kurallarla tahmini kazancı gösterir.
 
-Sağ üstteki **Üretici / İşletme** anahtarıyla roller arasında geçiş yapılır.
+1. Otel extranet'te teklif açar → elçi app'ten başvurur → otel onaylar, elçiye kişisel link (`hotel.html?ref=KOD`) verilir.
+2. Misafir linkle gelir (%5 indirim, tıklama kaydı) → tarih seçip ön talep bırakır.
+3. Otel extranet → Ön talepler'de onaylar → satış elçinin koduna işlenir, cüzdanda %5 görünür.
 
-## Yapı
-- `index.html` — kabuk (üst bar, mobil alt menü, modal, toast)
-- `css/styles.css` — tasarım sistemi, mobil uyumlu düzen
-- `js/data.js` — demo veri + mock API (`localStorage`), backend'e geçişte değişecek tek katman
-- `js/app.js` — hash router ve görünümler
+## Dosyalar
 
-Demo verisini sıfırlamak için tarayıcı konsolunda: `TravelWin.reset()`
+- `css/styles.css` — ortak tasarım sistemi (lacivert / beyaz / altın / zümrüt)
+- `js/icons.js` — ortak ikon seti · `js/data.js` — demo veri (localStorage `turizmlink:v3`)
+- `js/home.js` — vitrin · `js/app.js` — paneller · `js/hotel.js` — misafir sayfası
 
-## Sonraki adımlar
-- Gerçek backend + kimlik doğrulama (işletme / üretici hesapları)
-- Sunucu taraflı tıklama takibi, cookie penceresi, kanal entegrasyonları (booking engine)
-- Komisyon ödemeleri ve fatura, konaklama rezervasyon takvimi
-- Üretici profili / sosyal medya istatistik doğrulaması
+Demo verisini sıfırlamak: panel sayfasında konsola `Turizmlink.reset()`.
