@@ -1327,3 +1327,10 @@ td.neg, .payout-sum .neg { color: #dc2626; }
 .gh-info div { padding: 10px 14px; border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); margin: -1px -1px 0 0; }
 .gh-info dt { font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
 .gh-info dd { margin: 2px 0 0; font-size: 14px; font-weight: 600; }
+
+.gh-contact { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-top: 18px; }
+.gh-contact a { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; background: var(--emerald-soft); color: var(--ink); }
+.gh-contact a:hover { background: #a7f3d0; }
+.gh-contact .ico { font-size: 20px; color: var(--emerald-2); flex-shrink: 0; }
+.gh-contact small { display: block; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--emerald-2); }
+.gh-contact span { font-size: 14px; font-weight: 600; line-height: 1.35; }

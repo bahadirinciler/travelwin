@@ -174,6 +174,10 @@
         <div class="gh-main">
           ${biz.about ? `<section class="card card-pad"><h2 class="gh-h2">Otel hakkında</h2><p class="gh-p">${esc(biz.about)}</p>
             ${biz.features?.length ? `<ul class="gh-feats">${biz.features.map((f) => `<li>${ic('check')} ${esc(f)}</li>`).join('')}</ul>` : ''}
+            ${biz.address || biz.phone ? `<div class="gh-contact">
+              ${biz.address ? `<a href="https://maps.google.com/?q=${encodeURIComponent(biz.name + ', ' + biz.address)}" target="_blank" rel="noopener">${ic('pin')}<span><small>Adres</small>${esc(biz.address)}</span></a>` : ''}
+              ${biz.phone ? `<a href="tel:+90${biz.phone.replace(/\D/g, '').replace(/^0/, '')}">${ic('phone')}<span><small>Telefon</small>${esc(biz.phone)}</span></a>` : ''}
+            </div>` : ''}
             ${biz.info?.length ? `<dl class="gh-info">${biz.info.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>` : ''}</section>` : ''}
 
           <section class="card card-pad">

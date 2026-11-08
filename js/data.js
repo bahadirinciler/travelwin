@@ -1,7 +1,7 @@
 /* Turizmlink — demo veri katmanı (localStorage). Backend gelene kadar mock "API". */
 (function () {
   // v5: Casa Di Datça gerçek odaları (Capri dahil) ve fotoğrafları — eski demo verisi yerine yeni seed yüklenir.
-  const KEY = 'turizmlink:v6';
+  const KEY = 'turizmlink:v7';
 
   /* ---- Gelir modeli ----
      Satış: otel, misafirin ödediği tutar üzerinden toplam %7 öder → %5 elçiye (net), %2 Turizmlink'e.
@@ -35,28 +35,30 @@
           id: 'b5', name: 'Casa Di Datça', region: 'Datça',
           // Bilgiler: casadidatca.com + otel sahibi (deniz mesafesi)
           tagline: 'Eski Datça\'nın karşısında, 10 dönümlük vadide taş mimarili butik otel.',
-          about: 'Sadece 12 özel oda: her biri farklı dekore edilmiş, yüksek tavanlı ve aydınlık. Oda & kahvaltı konseptinde kahvaltı her sabah özenle hazırlanır; akşam yemeği servisi yoktur, yakında birçok seçkin restoran bulunur. Selvili bahçeler, taş yollar, geniş verandalar ve havuz başında sakin bir tatil.',
-          features: ['Kahvaltı dahil', 'Açık havuz', 'Denize 3 km · 7–8 dk', 'Eski Datça\'ya birkaç dakika', 'Geniş verandalar ve bahçe', 'Evcil hayvan kabul edilir'],
+          about: 'Sadece 12 özel oda: her biri farklı dekore edilmiş, yüksek tavanlı ve aydınlık. Oda & kahvaltı konseptinde kahvaltı her sabah özenle hazırlanır; otelin Mamma Mia restoran & pizzeriası yeni sezonda açılıyor. Selvili bahçeler, taş yollar, geniş verandalar ve havuz başında sakin bir tatil.',
+          features: ['Kahvaltı dahil', 'Açık havuz', 'Denize 3 km · 7–8 dk', 'Eski Datça\'ya birkaç dakika', 'Mamma Mia restoran & pizzeria (yeni sezon)', 'Evcil hayvan kabul edilir'],
           info: [
-            ['Sezon', 'Nisan – Ekim sonu'], ['Konsept', 'Oda & kahvaltı · akşam yemeği yok'],
+            ['Sezon', 'Nisan – Ekim sonu'], ['Konsept', 'Oda & kahvaltı'], ['Restoran', 'Mamma Mia · yeni sezonda açılıyor'],
             ['Deniz', '3 km · araçla 7–8 dakika'], ['Koylar', 'Birçok koy ve plaj araçla 10–15 dakika'],
             ['Çocuk', '7 yaş ve üzeri yetişkin sayılır'], ['Evcil hayvan', 'Kabul edilir'],
           ],
+          address: 'Datça Mah. Küme 1 Evleri No: 6, Datça / Muğla',
+          phone: '0544 633 34 35',
           // Fotoğraflar: assets/casadidatca (kaynak: GORSELLER/CASADIDATCA, tools/casadidatca-gorseller.sh ile rötuşlu)
           cover: 'assets/casadidatca/hero.jpg',
           gallery: [
-            ['havuz-aksam', 'Akşam havuz başı'], ['tas-villa', 'Taş villa'], ['restoran-teras', 'Bambu gölgeli teras'],
+            ['havuz-aksam', 'Akşam havuz başı'], ['tas-villa', 'Taş villa'], ['restoran-teras', 'Mamma Mia terası'],
             ['kahvalti', 'Kahvaltı'], ['drone-gunbatimi', 'Gün batımında otel'], ['salon-manzara', 'Manzaralı salon'],
             ['somine-kutuphane', 'Şömineli kütüphane'], ['tas-kemer', 'Taş kemerler'], ['bahce-yolu', 'Bahçe yolu'], ['havuz-gece', 'Gece havuz'], ['capri-veranda', 'Capri bahçe evi verandası'],
           ].map(([f, t]) => ({ src: 'assets/casadidatca/gallery/' + f + '.jpg', thumb: 'assets/casadidatca/thumbs/' + f + '.jpg', title: t })),
           media: [
-            ['villa-aksam', 'Taş villa, akşam', 'Story'], ['havuz', 'Havuz başı', 'Reels kapağı'], ['restoran', 'Bambu gölgeli teras', 'Story'],
+            ['villa-aksam', 'Taş villa, akşam', 'Story'], ['havuz', 'Havuz başı', 'Reels kapağı'], ['restoran', 'Mamma Mia terası', 'Story'],
             ['kahvalti', 'Kahvaltı sofrası', 'Reels kapağı'], ['yesil-kapi', 'Yeşil kapı', 'Story'], ['tas-kemer', 'Taş kemerler', 'Story'],
             ['drone', 'Gün batımında Datça', 'Reels kapağı'], ['oda', 'Cinque Terre odası', 'Story'], ['capri-bahce', 'Capri bahçe evi', 'Story'],
           ].map(([f, t, fmt]) => ({ id: f, src: 'assets/casadidatca/story/' + f + '.jpg', thumb: 'assets/casadidatca/story/thumbs/' + f + '.jpg', title: t, format: fmt })),
           // Fiyatlar örnek değerdir; otel extranet → Takvim / Fiyat'tan günceller.
           rooms: [
-            { id: 'cinque-terre', name: 'Cinque Terre', desc: 'Çift kişilik · manzaralı pencere kenarı', guests: 2, price: 7500, img: 'assets/casadidatca/rooms/cinque-terre.jpg' },
+            { id: 'cinque-terre', name: 'Cinque Terre', desc: 'Çift kişilik · manzaralı pencere kenarı', guests: 2, price: 9000, img: 'assets/casadidatca/rooms/cinque-terre.jpg' },
             { id: 'portofino', name: 'Portofino', desc: 'Çift kişilik · manzaralı pencere kenarı', guests: 2, price: 7500, img: 'assets/casadidatca/rooms/portofino.jpg' },
             { id: 'orvieto', name: 'Orvieto', desc: 'Çift kişilik', guests: 2, price: 7000, img: 'assets/casadidatca/rooms/orvieto.jpg' },
             { id: 'lerici', name: 'Lerici', desc: 'Çift kişilik · terasa açılır', guests: 2, price: 7500, img: 'assets/casadidatca/rooms/lerici.jpg' },

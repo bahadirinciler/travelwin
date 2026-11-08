@@ -19,9 +19,9 @@ P = dict(base=9000, step=0.10, jun=0.20, may=0.10, aug=0.10, extra=2000, single=
 # Odalar: (ad, kategori, maks. kişi, teyit gerekiyor mu?)
 ROOMS = [
     ('Lerici', 1, 2, False), ('Orvieto', 1, 2, False),
-    ('Arezzo', 1, 3, True), ('Cinque Terre', 1, 2, True),
+    ('Arezzo', 1, 3, True),
     ('Lucca', 2, 3, False), ('Portofino', 2, 2, False),
-    ('Iseo-Como-Maggiore', 3, 3, False), ('Garda', 3, 3, False),
+    ('Iseo-Como-Maggiore', 3, 3, False), ('Garda', 3, 3, False), ('Cinque Terre', 3, 2, False),
     ('Capri', 4, 4, False), ('Elba', 4, 5, False),
 ]
 SEASONS = [  # (başlık, sütun)
@@ -140,7 +140,7 @@ p = Sheet('Parametreler', [52, 16, 60])
 p.put(0, 1, 'Fiyat parametreleri — sarı hücreleri değiştirebilirsin', s=TITLE)
 p.put(0, 3, 'Parametre', s=HEAD); p.put(1, 3, 'Değer', s=HEAD); p.put(2, 3, 'Açıklama', s=HEAD)
 rows = [
-    ('Temmuz · 1. kategori · 2 kişi (gecelik)', P['base'], INPUT_TL, 'Lerici, Orvieto (+ teyit edilecek odalar)'),
+    ('Temmuz · 1. kategori · 2 kişi (gecelik)', P['base'], INPUT_TL, 'Lerici, Orvieto (+ Arezzo, teyit edilecek)'),
     ('Kategori artışı (bir önceki kategoriye göre)', P['step'], INPUT_PCT, '2. kat. = 1. kat. +%10 · 3. kat. = 2. kat. +%10 · 4. kat. = 3. kat. +%10'),
     ('Haziran indirimi (Temmuz\'a göre)', P['jun'], INPUT_PCT, 'Haziran = Temmuz −%20'),
     ('Mayıs indirimi (Haziran\'a göre)', P['may'], INPUT_PCT, 'Mayıs = Haziran −%10 · 16 Eylül–30 Ekim = Mayıs'),
@@ -153,7 +153,7 @@ for j, (a, v, s_, d) in enumerate(rows):
     p.put(0, r, a, s=BOLD); p.put(1, r, v, s=s_); p.put(2, r, d, s=NOTE)
 p.put(0, 12, 'Varsayımlar (teyit edilecek)', s=TITLE)
 for j, line in enumerate([
-    '• 1. kategori "Lerici – Orvieto – Orvieto" olarak yazılmıştı; tekrar eden isim nedeniyle Arezzo ve Cinque Terre geçici olarak 1. kategoriye kondu.',
+    '• Arezzo hiçbir kategoride belirtilmedi; geçici olarak 1. kategoriye kondu. (Cinque Terre = 3. kategori, otel sahibi teyit etti.)',
     '• "4. kategori: 4. kategori +%10" ifadesi "3. kategori +%10" olarak yorumlandı.',
     '• Ara değerler tam liraya yuvarlandı (örn. 4. kategori Temmuz 11.979 ₺). İstersen 50 ₺ / 100 ₺ katlarına yuvarlayabilirim.',
     '• Ek kişi ücreti ve tek kişi indirimi tüm sezonlarda sabit kabul edildi.',
