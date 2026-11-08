@@ -1,7 +1,7 @@
 /* Turizmlink — demo veri katmanı (localStorage). Backend gelene kadar mock "API". */
 (function () {
-  // v3: Turizmlink marka + %7 model — eski demo verisi yerine yeni seed yüklenir.
-  const KEY = 'turizmlink:v3';
+  // v4: Casa Di Datça gerçek odaları ve fotoğrafları — eski demo verisi yerine yeni seed yüklenir.
+  const KEY = 'turizmlink:v4';
 
   /* ---- Gelir modeli ----
      Satış: otel, misafirin ödediği tutar üzerinden toplam %7 öder → %5 elçiye (net), %2 Turizmlink'e.
@@ -33,13 +33,32 @@
       businesses: [
         {
           id: 'b5', name: 'Casa Di Datça', region: 'Datça',
-          tagline: 'Knidos yolunda, taş duvarlar ve bademler arasında 8 odalı butik otel.',
-          about: 'Eski Datça evlerinden dönüştürülmüş taş odalar, bahçede serinleten havuz ve her sabah yerel üreticilerden hazırlanan Ege kahvaltısı. Kızılbük ve Palamutbükü koylarına kısa mesafede.',
-          features: ['Ege kahvaltısı dahil', 'Bahçe & havuz', 'Denize 400 m', 'Ücretsiz otopark', 'Yetişkinlere uygun', 'Ücretsiz Wi-Fi'],
+          tagline: 'Datça\'da taş mimari, havuz ve her biri bir İtalyan kentinin adını taşıyan odalar.',
+          about: 'Taş kemerli villası, bahçe içindeki havuzu ve bambu gölgeli restoran terasıyla Casa Di Datça, Datça\'nın sakinliğini İtalyan esintisiyle buluşturur. Odalar Arezzo\'dan Portofino\'ya İtalyan kentlerinin adını taşır; şömineli kütüphane salonu ve manzaralı ortak alanlar misafirlere açıktır.',
+          features: ['Açık havuz', 'Mamma Mia restoran & pizzeria', 'Kahvaltı', 'Şömineli kütüphane salonu', 'Geniş bahçe', 'Ücretsiz otopark'],
+          // Fotoğraflar: assets/casadidatca (kaynak: GORSELLER/CASADIDATCA, tools/casadidatca-gorseller.sh ile rötuşlu)
+          cover: 'assets/casadidatca/hero.jpg',
+          gallery: [
+            ['havuz-aksam', 'Akşam havuz başı'], ['tas-villa', 'Taş villa'], ['restoran-teras', 'Restoran terası'],
+            ['kahvalti', 'Kahvaltı'], ['drone-gunbatimi', 'Gün batımında otel'], ['salon-manzara', 'Manzaralı salon'],
+            ['somine-kutuphane', 'Şömineli kütüphane'], ['tas-kemer', 'Taş kemerler'], ['bahce-yolu', 'Bahçe yolu'], ['havuz-gece', 'Gece havuz'],
+          ].map(([f, t]) => ({ src: 'assets/casadidatca/gallery/' + f + '.jpg', thumb: 'assets/casadidatca/thumbs/' + f + '.jpg', title: t })),
+          media: [
+            ['villa-aksam', 'Taş villa, akşam', 'Story'], ['havuz', 'Havuz başı', 'Reels kapağı'], ['restoran', 'Restoran terası', 'Story'],
+            ['kahvalti', 'Kahvaltı sofrası', 'Reels kapağı'], ['yesil-kapi', 'Yeşil kapı', 'Story'], ['tas-kemer', 'Taş kemerler', 'Story'],
+            ['drone', 'Gün batımında Datça', 'Reels kapağı'], ['oda', 'Cinque Terre odası', 'Story'],
+          ].map(([f, t, fmt]) => ({ id: f, src: 'assets/casadidatca/story/' + f + '.jpg', thumb: 'assets/casadidatca/story/thumbs/' + f + '.jpg', title: t, format: fmt })),
+          // Fiyatlar örnek değerdir; otel extranet → Takvim / Fiyat'tan günceller.
           rooms: [
-            { id: 'r1', name: 'Bahçe Odası', guests: 2, price: 5800 },
-            { id: 'r2', name: 'Deniz Manzaralı Taş Oda', guests: 2, price: 7500 },
-            { id: 'r3', name: 'Badem Suit (aile)', guests: 4, price: 10900 },
+            { id: 'cinque-terre', name: 'Cinque Terre', desc: 'Çift kişilik · manzaralı pencere kenarı', guests: 2, price: 7500, img: 'assets/casadidatca/rooms/cinque-terre.jpg' },
+            { id: 'portofino', name: 'Portofino', desc: 'Çift kişilik · manzaralı pencere kenarı', guests: 2, price: 7500, img: 'assets/casadidatca/rooms/portofino.jpg' },
+            { id: 'orvieto', name: 'Orvieto', desc: 'Çift kişilik', guests: 2, price: 7000, img: 'assets/casadidatca/rooms/orvieto.jpg' },
+            { id: 'lerici', name: 'Lerici', desc: 'Çift kişilik · terasa açılır', guests: 2, price: 7500, img: 'assets/casadidatca/rooms/lerici.jpg' },
+            { id: 'arezzo', name: 'Arezzo', desc: 'Çift + tek kişilik yatak', guests: 3, price: 8500, img: 'assets/casadidatca/rooms/arezzo.jpg' },
+            { id: 'lucca', name: 'Lucca', desc: 'Tek kişilik yataklar + oturma köşesi', guests: 3, price: 8500, img: 'assets/casadidatca/rooms/lucca.jpg' },
+            { id: 'garda', name: 'Garda', desc: 'Geniş oda · bahçeye açılan kapı', guests: 3, price: 9000, img: 'assets/casadidatca/rooms/garda.jpg' },
+            { id: 'iseo', name: 'Iseo-Como-Maggiore', desc: 'Geniş oda · bahçeye açılan kapı', guests: 3, price: 9000, img: 'assets/casadidatca/rooms/iseo.jpg' },
+            { id: 'elba', name: 'Elba', desc: 'Aile dairesi · mutfak ve oturma alanı', guests: 5, price: 12500, img: 'assets/casadidatca/rooms/elba.jpg' },
           ],
           // Otelin kapattığı günler (extranet'te yönetilecek)
           closed: [5, 6, 7, 19, 20].map((n) => isoDay(now + n * day)),
@@ -56,8 +75,8 @@
       ],
       offers: [
         {
-          id: 'o8', businessId: 'b5', title: 'Casa Di Datça — Deniz Manzaralı Taş Oda', category: 'otel', region: 'Datça',
-          description: 'Datça\'nın taş evlerinden dönüştürülmüş 8 odalı butik otelimizi takipçilerine tanıtacak elçiler arıyoruz. Linkinle gelen misafir %5 indirim alır.',
+          id: 'o8', businessId: 'b5', title: 'Casa Di Datça — Konaklama + içerik iş birliği', category: 'otel', region: 'Datça',
+          description: 'Taş mimarili, havuzlu butik otelimizi takipçilerine tanıtacak elçiler arıyoruz. Linkinle gelen misafir %5 indirim alır.',
           price: 7500, unit: 'gece', model: 'hybrid', stay: { nights: 2, guests: 2 },
           deliverables: ['1 dikey video (Reels/TikTok, min. 30 sn)', '3 Story (link sticker\'lı)', 'Google yorum'],
           minFollowers: 5000, active: true, createdAt: now - 1 * 3600000,
@@ -157,7 +176,7 @@
       // Misafir ön talepleri (hotel.html → extranet onayı → satış elçiye işlenir)
       requests: [
         {
-          id: 'q1', businessId: 'b5', offerId: 'o8', code: 'AYSE-DATCA', roomId: 'r2', guestName: 'Elif K.', phone: '05xx xxx 12 34', guests: 2,
+          id: 'q1', businessId: 'b5', offerId: 'o8', code: 'AYSE-DATCA', roomId: 'cinque-terre', guestName: 'Elif K.', phone: '05xx xxx 12 34', guests: 2,
           checkIn: isoDay(now + 12 * day), checkOut: isoDay(now + 15 * day), nights: 3,
           list: 22500, discount: 1125, total: 21375, status: 'pending', createdAt: now - 2 * 3600000,
         },

@@ -1262,3 +1262,63 @@ td.neg, .payout-sum .neg { color: #dc2626; }
   .req-table .act-btns .btn { flex: 1; padding: 11px; }
   .table-wrap { -webkit-overflow-scrolling: touch; }
 }
+
+/* =====================================================================
+   v5 — Gerçek fotoğraflar: kapak, galeri, oda görselleri, lightbox, medya kiti
+   ===================================================================== */
+.gh-cover.has-photo { background: var(--navy); }
+.gh-cover.has-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.gh-cover.has-photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(15,23,42,0) 55%, rgba(15,23,42,.45)); pointer-events: none; }
+.gh-cover-txt { z-index: 1; }
+.gh-all {
+  position: absolute; z-index: 1; right: 16px; bottom: 16px; display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 14px; border-radius: 999px; border: 0; cursor: pointer;
+  background: rgba(255,255,255,.92); color: var(--ink); font-weight: 700; font-size: 13px; backdrop-filter: blur(6px);
+}
+.gh-all:hover { background: #fff; }
+
+.gh-gallery { display: grid; grid-template-columns: 2fr 1fr 1fr; grid-template-rows: 170px 170px; gap: 8px; margin: 0 0 20px; }
+.gh-shot { position: relative; padding: 0; border: 0; border-radius: 14px; overflow: hidden; cursor: zoom-in; background: var(--surface-2); }
+.gh-shot img { width: 100%; height: 100%; object-fit: cover; transition: transform .35s ease; }
+.gh-shot:hover img { transform: scale(1.04); }
+.gh-shot.big { grid-row: span 2; }
+.gh-more { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(15,23,42,.55); color: #fff; font-size: 22px; font-weight: 800; }
+
+.gh-room { grid-template-columns: 88px 1fr auto; }
+.gh-room-img { width: 88px; height: 66px; border-radius: 12px; overflow: hidden; background: var(--surface-2); }
+.gh-room-img img { width: 100%; height: 100%; object-fit: cover; }
+.gh-room-txt small { display: block; }
+.gh-room.active .gh-room-img { box-shadow: 0 0 0 3px var(--emerald); }
+
+/* Lightbox */
+.modal-card.modal-photo { width: min(1100px, 100%); background: var(--navy-3); }
+.lightbox { position: relative; }
+.lightbox img { width: 100%; max-height: calc(100dvh - 120px); object-fit: contain; background: #000; }
+.lb-close { position: absolute; top: 12px; right: 12px; z-index: 1; background: rgba(255,255,255,.9); }
+.lb-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; color: rgba(255,255,255,.8); font-size: 14px; }
+.lb-bar b { color: #fff; }
+
+/* Medya kiti: fotoğraf kartı önizleme bindirmeleri */
+.media-thumb.photo .mo-hotel { position: absolute; top: 44px; left: 12px; color: #fff; font-size: 10px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; text-shadow: 0 1px 6px rgba(0,0,0,.5); }
+.media-thumb.photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(15,23,42,.35) 0%, rgba(15,23,42,0) 22%, rgba(15,23,42,0) 55%, rgba(15,23,42,.85) 100%); pointer-events: none; }
+.media-thumb.photo .mo-foot { position: absolute; z-index: 1; left: 12px; right: 12px; bottom: 12px; display: flex; flex-direction: column; gap: 6px; color: #fff; }
+.media-thumb.photo .mo-foot b { font-size: 14px; line-height: 1.2; }
+.media-thumb.photo .mo-foot i { font-style: normal; align-self: flex-start; padding: 4px 8px; border-radius: 999px; background: var(--emerald); color: #022c22; font-size: 9.5px; font-weight: 800; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.media-thumb.photo .media-badge, .media-thumb.photo .mo-hotel { z-index: 1; }
+.media-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 1100px) { .media-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+.price-row { gap: 12px; }
+.price-img { width: 56px; height: 42px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
+.price-txt { flex: 1; min-width: 0; }
+
+@media (max-width: 760px) {
+  .gh-gallery { grid-template-columns: 1fr 1fr; grid-template-rows: 180px 110px; }
+  .gh-shot.big { grid-column: 1 / -1; grid-row: auto; }
+  .gh-shot:nth-child(4), .gh-shot:nth-child(5) { display: none; }
+  .gh-room { grid-template-columns: 64px 1fr auto; }
+  .gh-room-img { width: 64px; height: 52px; }
+  .media-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.portal-img { width: calc(100% + 44px); margin: -22px -22px 4px; height: 150px; object-fit: cover; border-radius: 22px 22px 0 0; }

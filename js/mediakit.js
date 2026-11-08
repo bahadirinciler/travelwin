@@ -110,5 +110,44 @@
     });
   }
 
-  window.TLMedia = { SCENES, svg, dataUrl, download };
+  /* ---------- Gerçek fotoğraflar: dikey görsel + otel adı + ref kodu bandı ---------- */
+  function roundRect(c, x0, y0, w, h, r) {
+    c.beginPath(); c.moveTo(x0 + r, y0); c.arcTo(x0 + w, y0, x0 + w, y0 + h, r); c.arcTo(x0 + w, y0 + h, x0, y0 + h, r);
+    c.arcTo(x0, y0 + h, x0, y0, r); c.arcTo(x0, y0, x0 + w, y0, r); c.closePath();
+  }
+  /** item: { src, title }, opts: { hotel, code } → JPEG indirir (kodlu bant ile). */
+  function downloadPhoto(item, opts, filename) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+        const c = cv.getContext('2d');
+        // kapla (cover)
+        const s = Math.max(W / img.naturalWidth, H / img.naturalHeight);
+        const dw = img.naturalWidth * s, dh = img.naturalHeight * s;
+        c.drawImage(img, (W - dw) / 2, (H - dh) / 2, dw, dh);
+        // üst ve alt karartma
+        let g = c.createLinearGradient(0, 0, 0, 420); g.addColorStop(0, 'rgba(15,23,42,.55)'); g.addColorStop(1, 'rgba(15,23,42,0)');
+        c.fillStyle = g; c.fillRect(0, 0, W, 420);
+        g = c.createLinearGradient(0, H - 760, 0, H); g.addColorStop(0, 'rgba(15,23,42,0)'); g.addColorStop(1, 'rgba(15,23,42,.88)');
+        c.fillStyle = g; c.fillRect(0, H - 760, W, 760);
+        c.fillStyle = '#fff'; c.textBaseline = 'alphabetic';
+        c.font = `700 40px ${FONT}`; c.letterSpacing = '8px';
+        c.fillText((opts.hotel || '').toLocaleUpperCase('tr-TR'), 80, 170);
+        c.letterSpacing = '0px';
+        c.font = `800 84px ${FONT}`; c.fillText(item.title, 80, H - 330);
+        c.font = `500 42px ${FONT}`; c.fillStyle = '#e2e8f0'; c.fillText(opts.region ? `${opts.region} · turizmlink.com` : 'turizmlink.com', 80, H - 260);
+        const label = `%5 indirim${opts.code ? ` · KOD: ${opts.code}` : ''}`;
+        c.font = `800 42px ${FONT}`;
+        const w = Math.min(W - 160, c.measureText(label).width + 100);
+        c.fillStyle = '#10b981'; roundRect(c, 80, H - 200, w, 110, 55); c.fill();
+        c.fillStyle = '#022c22'; c.fillText(label, 130, H - 130);
+        cv.toBlob((b) => { if (b) { save(b, `${filename}.jpg`); resolve('jpg'); } else reject(new Error('toBlob')); }, 'image/jpeg', 0.9);
+      };
+      img.onerror = reject;
+      img.src = item.src;
+    });
+  }
+
+  window.TLMedia = { SCENES, svg, dataUrl, download, downloadPhoto };
 })();

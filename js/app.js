@@ -265,9 +265,24 @@
     return `
       <div class="page-head"><div><h1>Medya Kiti</h1><p>${esc(b.name)} için dikey formatta (1080×1920) Story ve Reels görselleri. İndir, linkinle paylaş.</p></div></div>
       ${hotels.length > 1 ? `<div class="pills">${hotels.map((h) => `<button class="pill ${h.b.id === b.id ? 'active' : ''}" data-action="media-hotel" data-id="${h.b.id}">${esc(h.b.name)}</button>`).join('')}</div>` : ''}
-      <div class="info-box">${ic('info')}<span>Görseller Turizmlink şablonlarıyla hazırlanır; kodlu kartta ref kodun (<b>${esc(a.code)}</b>) yazılıdır. Otel kendi fotoğraf ve videolarını yükledikçe bu alan güncellenir.</span></div>
+      ${b.media?.length ? `
+      <div class="info-box">${ic('info')}<span>Otelin kendi fotoğrafları, dikey (9:16) kesilmiş ve rötuşlanmış. <b>Kodlu indir</b>: otel adı ve ref kodun (<b>${esc(a.code)}</b>) görselin üstüne yazılır. <b>Yalın</b>: yazısız fotoğraf.</span></div>
       <div class="media-grid">
-        ${TLMedia.SCENES.map((sc) => `
+        ${b.media.map((m) => `
+          <figure class="media-card">
+            <div class="media-thumb photo"><img src="${esc(m.thumb)}" alt="${esc(m.title)} — ${esc(b.name)}" loading="lazy" />
+              <span class="media-badge">${ic('video')} ${esc(m.format)}</span>
+              <span class="mo-hotel">${esc(b.name)}</span>
+              <span class="mo-foot"><b>${esc(m.title)}</b><i>%${PRICING.GUEST} indirim · KOD: ${esc(a.code)}</i></span>
+            </div>
+            <figcaption><div><b>${esc(m.title)}</b><small>9:16 · 1080×1920</small></div>
+              <button class="btn btn-success btn-sm" data-action="media-photo" data-id="${esc(m.id)}">${ic('download')} Kodlu indir</button>
+              <a class="btn btn-ghost btn-sm" href="${esc(m.src)}" download="${esc(b.id)}-${esc(m.id)}.jpg">Yalın</a></figcaption>
+          </figure>`).join('')}
+      </div>
+      <h2 class="section-title">Şablonlar</h2>` : `<div class="info-box">${ic('info')}<span>Görseller Turizmlink şablonlarıyla hazırlanır; kodlu kartta ref kodun (<b>${esc(a.code)}</b>) yazılıdır. Otel kendi fotoğraflarını yükledikçe bu alan güncellenir.</span></div>`}
+      <div class="media-grid">
+        ${TLMedia.SCENES.filter((sc) => !b.media?.length || sc.promo).map((sc) => `
           <figure class="media-card">
             <div class="media-thumb"><img src="${TLMedia.dataUrl(TLMedia.svg(sc, opts))}" alt="${esc(sc.title)} — ${esc(b.name)}" loading="lazy" /><span class="media-badge">${ic(sc.promo ? 'sparkles' : 'video')} ${sc.format}</span></div>
             <figcaption><div><b>${esc(sc.title)}</b><small>9:16 · 1080×1920</small></div>
@@ -538,7 +553,8 @@
           <div class="price-list">
             ${(biz.rooms || []).map((r) => `
               <div class="price-row">
-                <div><b>${esc(r.name)}</b><small>${r.guests} kişiye kadar · elçi linkiyle ${money(DB.guestPrice(r.price, true).total)}</small></div>
+                ${r.img ? `<img class="price-img" src="${esc(r.img)}" alt="" loading="lazy" />` : ''}
+                <div class="price-txt"><b>${esc(r.name)}</b><small>${r.guests} kişiye kadar · elçi linkiyle ${money(DB.guestPrice(r.price, true).total)}</small></div>
                 <div class="price-input"><span>₺</span><input class="input" type="number" name="${r.id}" min="100" step="50" value="${r.price}" aria-label="${esc(r.name)} gecelik fiyat" /></div>
               </div>`).join('')}
           </div>
@@ -755,6 +771,18 @@
         el.disabled = true;
         TLMedia.download(sc, { hotel: b.name, region: b.region, code: a.code }, `turizmlink-${b.id}-${sc.id}`)
           .then((fmt) => { toast(`Görsel indirildi (${fmt.toUpperCase()})`); el.disabled = false; });
+        break;
+      }
+      case 'media-photo': {
+        const a = myApproved().find((x) => hotelOf(x).b?.id === media.bizId);
+        const b = DB.business(media.bizId);
+        const m = b?.media?.find((x) => x.id === id);
+        if (!a || !m) break;
+        el.disabled = true;
+        TLMedia.downloadPhoto(m, { hotel: b.name, region: b.region, code: a.code }, `turizmlink-${b.id}-${m.id}`)
+          .then(() => toast('Kodlu görsel indirildi'))
+          .catch(() => toast('Görsel hazırlanamadı, Yalın sürümü deneyin'))
+          .finally(() => { el.disabled = false; });
         break;
       }
       case 'cal-toggle': {

@@ -80,7 +80,7 @@
   /* ---------- Durum ---------- */
   const start = new Date();
   const st = {
-    roomId: rooms.find((r) => r.id === 'r2')?.id || rooms[0]?.id,
+    roomId: rooms[0]?.id,
     checkIn: null, checkOut: null, guests: 2,
     month: new Date(start.getFullYear(), start.getMonth(), 1),
   };
@@ -155,7 +155,9 @@
     const r = room();
     $root.innerHTML = `
       <section class="gh-hero">
-        <div class="gh-cover cover-otel"><span class="cover-ico" aria-hidden="true">${ic('sun')}</span>
+        <div class="gh-cover ${biz.cover ? 'has-photo' : 'cover-otel'}">
+          ${biz.cover ? `<img src="${esc(biz.cover)}" alt="${esc(biz.name)}" fetchpriority="high" />` : `<span class="cover-ico" aria-hidden="true">${ic('sun')}</span>`}
+          ${biz.gallery?.length ? `<button type="button" class="gh-all" data-gal="0">${ic('grid')} ${biz.gallery.length} fotoğraf</button>` : ''}
           <div class="gh-cover-txt"><span class="chip chip-glass">${ic('pin')} ${esc(biz.region)}</span><span class="chip chip-glass">${ic('building')} Butik otel</span></div>
         </div>
         <div class="gh-head">
@@ -163,6 +165,10 @@
           <p>${esc(biz.tagline || offer?.description || '')}</p>
         </div>
       </section>
+
+      ${biz.gallery?.length ? `<div class="gh-gallery" aria-label="Fotoğraf galerisi">
+        ${biz.gallery.slice(0, 5).map((g, i) => `<button type="button" class="gh-shot ${i === 0 ? 'big' : ''}" data-gal="${i}" aria-label="${esc(g.title)} — büyüt"><img src="${esc(g.thumb)}" alt="${esc(g.title)}" loading="lazy" />${i === 4 && biz.gallery.length > 5 ? `<span class="gh-more">+${biz.gallery.length - 5}</span>` : ''}</button>`).join('')}
+      </div>` : ''}
 
       <div class="gh-grid">
         <div class="gh-main">
@@ -175,8 +181,8 @@
               ${rooms.map((x) => `
                 <label class="gh-room ${x.id === st.roomId ? 'active' : ''}">
                   <input type="radio" name="room" value="${x.id}" ${x.id === st.roomId ? 'checked' : ''} />
-                  <span class="gh-room-ico">${ic('bed')}</span>
-                  <span class="gh-room-txt"><b>${esc(x.name)}</b><small>${x.guests} kişiye kadar</small></span>
+                  ${x.img ? `<span class="gh-room-img"><img src="${esc(x.img)}" alt="${esc(x.name)} odası" loading="lazy" /></span>` : `<span class="gh-room-ico">${ic('bed')}</span>`}
+                  <span class="gh-room-txt"><b>${esc(x.name)}</b>${x.desc ? `<small>${esc(x.desc)}</small>` : ''}<small>${x.guests} kişiye kadar</small></span>
                   <span class="gh-room-price">${hasRef ? `<s>${money(x.price)}</s>` : ''}<b>${money(hasRef ? DB.guestPrice(x.price, true).total : x.price)}</b><small>/ gece</small></span>
                 </label>`).join('')}
             </div>
@@ -217,7 +223,39 @@
   render();
 
   /* ---------- Olaylar ---------- */
+  /* ---------- Galeri (lightbox) ---------- */
+  let galIdx = 0;
+  function galleryHtml() {
+    const g = biz.gallery[galIdx];
+    return `
+      <div class="lightbox">
+        <button class="modal-close lb-close" data-close aria-label="Kapat">${ic('x')}</button>
+        <img src="${esc(g.src)}" alt="${esc(g.title)}" />
+        <div class="lb-bar">
+          <button type="button" class="cal-nav" data-galnav="-1" aria-label="Önceki">${ic('arrow', 'flip')}</button>
+          <span><b>${esc(g.title)}</b> · ${galIdx + 1} / ${biz.gallery.length}</span>
+          <button type="button" class="cal-nav" data-galnav="1" aria-label="Sonraki">${ic('arrow')}</button>
+        </div>
+      </div>`;
+  }
+  function openGallery(i) { galIdx = i; openModal(galleryHtml()); $modalCard.classList.add('modal-photo'); }
+  $modalCard.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-galnav]');
+    if (!b) return;
+    galIdx = (galIdx + +b.dataset.galnav + biz.gallery.length) % biz.gallery.length;
+    $modalCard.innerHTML = galleryHtml();
+  });
+  document.addEventListener('keydown', (e) => {
+    if ($modal.hidden || !$modalCard.classList.contains('modal-photo')) return;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+      galIdx = (galIdx + (e.key === 'ArrowRight' ? 1 : -1) + biz.gallery.length) % biz.gallery.length;
+      $modalCard.innerHTML = galleryHtml();
+    }
+  });
+
   $root.addEventListener('click', (e) => {
+    const gal = e.target.closest('[data-gal]');
+    if (gal) { openGallery(+gal.dataset.gal); return; }
     const nav = e.target.closest('[data-cal]');
     if (nav) {
       st.month = new Date(st.month.getFullYear(), st.month.getMonth() + +nav.dataset.cal, 1);
@@ -258,6 +296,7 @@
   let pending = null; // { name, phone, guests, quote }
   function openModal(html) {
     $modalCard.innerHTML = html;
+    $modalCard.classList.remove('modal-photo');
     $modal.hidden = false;
     document.body.style.overflow = 'hidden';
     $modalCard.querySelector('input, button:not(.modal-close)')?.focus({ preventScroll: true });
