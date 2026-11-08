@@ -1,7 +1,7 @@
 /* Turizmlink — demo veri katmanı (localStorage). Backend gelene kadar mock "API". */
 (function () {
-  // v5: Casa Di Datça gerçek odaları (Capri dahil) ve fotoğrafları — eski demo verisi yerine yeni seed yüklenir.
-  const KEY = 'turizmlink:v7';
+  // v8: Casa Di Datça sezonluk fiyatlandırma (kategori × sezon, kişi sayısı) — eski demo verisi yerine yeni seed yüklenir.
+  const KEY = 'turizmlink:v8';
 
   /* ---- Gelir modeli ----
      Satış: otel, misafirin ödediği tutar üzerinden toplam %7 öder → %5 elçiye (net), %2 Turizmlink'e.
@@ -29,6 +29,7 @@
   function seed() {
     const now = Date.now();
     const day = 86400000;
+    const SY = seasonYear(new Date(now)); // örnek tarihler için gelecek açık sezonun yılı
     return {
       businesses: [
         {
@@ -56,21 +57,24 @@
             ['kahvalti', 'Kahvaltı sofrası', 'Reels kapağı'], ['yesil-kapi', 'Yeşil kapı', 'Story'], ['tas-kemer', 'Taş kemerler', 'Story'],
             ['drone', 'Gün batımında Datça', 'Reels kapağı'], ['oda', 'Cinque Terre odası', 'Story'], ['capri-bahce', 'Capri bahçe evi', 'Story'],
           ].map(([f, t, fmt]) => ({ id: f, src: 'assets/casadidatca/story/' + f + '.jpg', thumb: 'assets/casadidatca/story/thumbs/' + f + '.jpg', title: t, format: fmt })),
-          // Fiyatlar örnek değerdir; otel extranet → Takvim / Fiyat'tan günceller.
+          // Sezonluk fiyat kuralları (otel sahibi, 2026-11): Temmuz 1. kategori 2 kişi 9.000 ₺, her kategori +%10;
+          // Haziran = Temmuz −%20, Mayıs = Haziran −%10, Nisan = Mayıs −%10, Ağustos = Temmuz +%10,
+          // 1–15 Eylül = Temmuz, 16 Eylül–30 Ekim = Mayıs; 2 kişi dışındaki her 7+ yaş kişi +2.000 ₺, tek kişi −1.000 ₺; yukarı 100 ₺'ye yuvarla.
+          pricing: { base: 9000, step: 0.10, jun: 0.20, may: 0.10, apr: 0.10, aug: 0.10, extra: 2000, single: 1000, roundTo: 100, cats: 4 },
           rooms: [
-            { id: 'cinque-terre', name: 'Cinque Terre', desc: 'Çift kişilik · manzaralı pencere kenarı', guests: 2, price: 9000, img: 'assets/casadidatca/rooms/cinque-terre.jpg' },
-            { id: 'portofino', name: 'Portofino', desc: 'Çift kişilik · manzaralı pencere kenarı', guests: 2, price: 7500, img: 'assets/casadidatca/rooms/portofino.jpg' },
-            { id: 'orvieto', name: 'Orvieto', desc: 'Çift kişilik', guests: 2, price: 7000, img: 'assets/casadidatca/rooms/orvieto.jpg' },
-            { id: 'lerici', name: 'Lerici', desc: 'Çift kişilik · terasa açılır', guests: 2, price: 7500, img: 'assets/casadidatca/rooms/lerici.jpg' },
-            { id: 'arezzo', name: 'Arezzo', desc: 'Çift + tek kişilik yatak', guests: 3, price: 8500, img: 'assets/casadidatca/rooms/arezzo.jpg' },
-            { id: 'lucca', name: 'Lucca', desc: 'Tek kişilik yataklar + oturma köşesi', guests: 3, price: 8500, img: 'assets/casadidatca/rooms/lucca.jpg' },
-            { id: 'garda', name: 'Garda', desc: 'Geniş oda · bahçeye açılan kapı', guests: 3, price: 9000, img: 'assets/casadidatca/rooms/garda.jpg' },
-            { id: 'iseo', name: 'Iseo-Como-Maggiore', desc: 'Geniş oda · bahçeye açılan kapı', guests: 3, price: 9000, img: 'assets/casadidatca/rooms/iseo.jpg' },
-            { id: 'capri', name: 'Capri', desc: 'Bahçe evi · veranda ve mutfak', guests: 4, price: 11000, img: 'assets/casadidatca/rooms/capri.jpg' },
-            { id: 'elba', name: 'Elba', desc: 'Aile dairesi · mutfak ve oturma alanı', guests: 5, price: 12500, img: 'assets/casadidatca/rooms/elba.jpg' },
+            { id: 'lerici', name: 'Lerici', desc: 'Çift kişilik · terasa açılır', guests: 2, cat: 1, img: 'assets/casadidatca/rooms/lerici.jpg' },
+            { id: 'orvieto', name: 'Orvieto', desc: 'Çift kişilik', guests: 2, cat: 1, img: 'assets/casadidatca/rooms/orvieto.jpg' },
+            { id: 'arezzo', name: 'Arezzo', desc: 'Çift + tek kişilik yatak', guests: 3, cat: 1, img: 'assets/casadidatca/rooms/arezzo.jpg' },
+            { id: 'lucca', name: 'Lucca', desc: 'Tek kişilik yataklar + oturma köşesi', guests: 3, cat: 2, img: 'assets/casadidatca/rooms/lucca.jpg' },
+            { id: 'portofino', name: 'Portofino', desc: 'Çift kişilik · manzaralı pencere kenarı', guests: 2, cat: 2, img: 'assets/casadidatca/rooms/portofino.jpg' },
+            { id: 'cinque-terre', name: 'Cinque Terre', desc: 'Çift kişilik · manzaralı pencere kenarı', guests: 2, cat: 3, img: 'assets/casadidatca/rooms/cinque-terre.jpg' },
+            { id: 'garda', name: 'Garda', desc: 'Geniş oda · bahçeye açılan kapı', guests: 3, cat: 3, img: 'assets/casadidatca/rooms/garda.jpg' },
+            { id: 'iseo', name: 'Iseo-Como-Maggiore', desc: 'Geniş oda · bahçeye açılan kapı', guests: 3, cat: 3, img: 'assets/casadidatca/rooms/iseo.jpg' },
+            { id: 'capri', name: 'Capri', desc: 'Bahçe evi · veranda ve mutfak', guests: 4, cat: 4, img: 'assets/casadidatca/rooms/capri.jpg' },
+            { id: 'elba', name: 'Elba', desc: 'Aile dairesi · mutfak ve oturma alanı', guests: 5, cat: 4, img: 'assets/casadidatca/rooms/elba.jpg' },
           ],
-          // Otelin kapattığı günler (extranet'te yönetilecek)
-          closed: [5, 6, 7, 19, 20].map((n) => isoDay(now + n * day)),
+          // Otelin kapattığı günler (extranet'te yönetilecek) — örnek: gelecek sezondan birkaç gün
+          closed: ['06-05', '06-06', '07-18', '07-19', '08-14', '08-15'].map((md) => `${SY}-${md}`),
         },
         { id: 'b1', name: 'Mavi Koy Butik Otel', region: 'Bodrum' },
         { id: 'b2', name: 'Kaptan Yatçılık', region: 'Göcek' },
@@ -86,7 +90,7 @@
         {
           id: 'o8', businessId: 'b5', title: 'Casa Di Datça — Konaklama + içerik iş birliği', category: 'otel', region: 'Datça',
           description: 'Taş mimarili, havuzlu butik otelimizi takipçilerine tanıtacak elçiler arıyoruz. Linkinle gelen misafir %5 indirim alır.',
-          price: 7500, unit: 'gece', model: 'hybrid', stay: { nights: 2, guests: 2 },
+          price: 9000, unit: 'gece', model: 'hybrid', stay: { nights: 2, guests: 2 },
           deliverables: ['1 dikey video (Reels/TikTok, min. 30 sn)', '3 Story (link sticker\'lı)', 'Google yorum'],
           minFollowers: 5000, active: true, createdAt: now - 1 * 3600000,
         },
@@ -186,11 +190,50 @@
       requests: [
         {
           id: 'q1', businessId: 'b5', offerId: 'o8', code: 'AYSE-DATCA', roomId: 'cinque-terre', guestName: 'Elif K.', phone: '05xx xxx 12 34', guests: 2,
-          checkIn: isoDay(now + 12 * day), checkOut: isoDay(now + 15 * day), nights: 3,
-          list: 22500, discount: 1125, total: 21375, status: 'pending', createdAt: now - 2 * 3600000,
+          checkIn: `${SY}-07-10`, checkOut: `${SY}-07-13`, nights: 3,
+          list: 32700, discount: 1635, total: 31065, status: 'pending', createdAt: now - 2 * 3600000,
         },
       ],
     };
+  }
+
+  /* ---------- Sezon & fiyat motoru (hotel.html, extranet ve Excel aynı kuralları kullanır) ---------- */
+  const SEASONS = [
+    { key: 'apr', label: 'Nisan', range: '1–30 Nisan' }, { key: 'may', label: 'Mayıs', range: '1–31 Mayıs' },
+    { key: 'jun', label: 'Haziran', range: '1–30 Haziran' }, { key: 'jul', label: 'Temmuz', range: '1–31 Temmuz' },
+    { key: 'aug', label: 'Ağustos', range: '1–31 Ağustos' }, { key: 'sep1', label: 'Eylül (1. yarı)', range: '1–15 Eylül' },
+    { key: 'sep2', label: 'Eylül–Ekim', range: '16 Eylül – 30 Ekim' },
+  ];
+  /** ISO gün → sezon anahtarı; sezon dışıysa null (otel 1 Nisan – 30 Ekim açık). */
+  function seasonOf(iso) {
+    const m = +iso.slice(5, 7), d = +iso.slice(8, 10);
+    return ({ 4: 'apr', 5: 'may', 6: 'jun', 7: 'jul', 8: 'aug' })[m]
+      || (m === 9 ? (d <= 15 ? 'sep1' : 'sep2') : m === 10 && d <= 30 ? 'sep2' : null);
+  }
+  /** Bugünden sonraki ilk açık sezonun yılı. */
+  function seasonYear(date) {
+    const y = date.getFullYear(), m = date.getMonth() + 1, d = date.getDate();
+    return m > 10 || (m === 10 && d > 30) ? y + 1 : y;
+  }
+  /** Kategori × sezon → 2 kişilik gecelik fiyat tablosu ({1: {apr, may, ...}, 2: ...}). */
+  function seasonTable(p) {
+    const up = (x) => Math.ceil(Math.round(x * 100) / 100 / p.roundTo) * p.roundTo;
+    const out = {};
+    for (let c = 1; c <= (p.cats || 4); c++) {
+      const jul = p.base * Math.pow(1 + p.step, c - 1);
+      const jun = jul * (1 - p.jun), may = jun * (1 - p.may), apr = may * (1 - p.apr), aug = jul * (1 + p.aug);
+      out[c] = { apr: up(apr), may: up(may), jun: up(jun), jul: up(jul), aug: up(aug), sep1: up(jul), sep2: up(may) };
+    }
+    return out;
+  }
+  /** Bir gecenin fiyatı (persons = 7 yaş ve üzeri kişi sayısı); sezon dışıysa null. */
+  function nightPriceOf(biz, room, iso, persons = 2) {
+    if (!biz?.pricing) return room.price; // sezon kuralı olmayan işletme: sabit fiyat
+    const key = seasonOf(iso);
+    if (!key) return null;
+    const base = seasonTable(biz.pricing)[room.cat || 1][key];
+    if (persons <= 1) return base - biz.pricing.single;
+    return base + Math.max(0, persons - 2) * biz.pricing.extra;
   }
 
   function isoDay(ts) { const d = new Date(ts); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
@@ -325,10 +368,33 @@
       if (i >= 0) b.closed.splice(i, 1); else b.closed.push(day);
       save(state); return i < 0;
     },
-    setRoomPrice(businessId, roomId, price) {
+    /* ---- Sezonluk fiyat ---- */
+    SEASONS, seasonOf, seasonTable,
+    nightPrice: nightPriceOf,
+    /** Konaklama teklifi: gece gece fiyat (sezon geçişleri dahil). Sezon dışı gece varsa { error }. */
+    stayQuote(biz, room, checkIn, checkOut, persons = 2) {
+      const nights = [];
+      for (let d = new Date(`${checkIn}T00:00:00`); isoDay(d) < checkOut; d.setDate(d.getDate() + 1)) {
+        const iso = isoDay(d);
+        const price = nightPriceOf(biz, room, iso, persons);
+        if (price == null) return { error: 'season', date: iso };
+        nights.push({ date: iso, season: biz.pricing ? seasonOf(iso) : null, price });
+      }
+      return { nights, list: nights.reduce((n, x) => n + x.price, 0) };
+    },
+    /** Odanın en düşük 2 kişilik gecelik fiyatı ("…'den başlayan"). */
+    fromPrice(biz, room) {
+      if (!biz?.pricing) return room.price;
+      return Math.min(...Object.values(seasonTable(biz.pricing)[room.cat || 1]));
+    },
+    setPricing(businessId, p) {
+      const b = DB.business(businessId); if (!b) return null;
+      b.pricing = { ...b.pricing, ...p }; save(state); return b.pricing;
+    },
+    setRoomCat(businessId, roomId, cat) {
       const r = DB.business(businessId)?.rooms?.find((x) => x.id === roomId);
-      if (!r || !(price > 0)) return null;
-      r.price = Math.round(price); save(state); return r;
+      if (!r) return null;
+      r.cat = Math.min(4, Math.max(1, +cat || 1)); save(state); return r;
     },
 
     /** Misafir fiyatı: liste − %5 davet indirimi (yalnızca geçerli elçi koduyla). */

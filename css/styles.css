@@ -1334,3 +1334,34 @@ td.neg, .payout-sum .neg { color: #dc2626; }
 .gh-contact .ico { font-size: 20px; color: var(--emerald-2); flex-shrink: 0; }
 .gh-contact small { display: block; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--emerald-2); }
 .gh-contact span { font-size: 14px; font-weight: 600; line-height: 1.35; }
+
+/* =====================================================================
+   v6 — Sezonluk fiyatlandırma
+   ===================================================================== */
+.cal-day.is-off { color: #cbd5e1; cursor: not-allowed; background: var(--bg); }
+.xcal-day.is-off { background: var(--bg); color: #94a3b8; border-style: dashed; cursor: default; }
+.xcal-day.is-off small { color: #94a3b8; font-weight: 600; }
+.xcal-day .day-price { color: var(--ink-3); font-weight: 600; }
+.lg-off { background: var(--bg); border: 1px dashed #cbd5e1; }
+.cal-note { display: flex; align-items: center; gap: 6px; margin: 10px 0 0; font-size: 13px; color: var(--ink-2); }
+.sum-note span { font-size: 12.5px; color: var(--ink-3); }
+
+.gh-prices { margin-top: 14px; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.gh-prices summary { cursor: pointer; padding: 12px 14px; font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 8px; background: var(--surface-2); list-style: none; }
+.gh-prices summary::-webkit-details-marker { display: none; }
+.gh-prices summary::after { content: "+"; margin-left: auto; font-size: 18px; color: var(--ink-3); }
+.gh-prices[open] summary::after { content: "−"; }
+.gh-prices table { width: 100%; }
+.gh-prices th, .gh-prices td { padding: 8px 14px; }
+.gh-prices .gh-note { padding: 10px 14px 12px; }
+
+.price-rules { margin-top: 18px; display: flex; flex-direction: column; gap: 16px; }
+.price-rules .gh-h2 { margin: 0; }
+.price-rules > .btn { align-self: flex-start; }
+.rule-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+.rule { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; font-size: 12.5px; font-weight: 700; color: var(--ink-2); }
+.rule-in { display: flex; align-items: center; gap: 6px; color: var(--ink-3); font-weight: 800; }
+.rule-in .input { padding: 8px 10px; font-weight: 700; text-align: right; }
+.matrix th small, .matrix td small { display: block; font-size: 11px; font-weight: 500; color: var(--ink-3); text-transform: none; letter-spacing: 0; }
+.matrix td.peak { background: var(--emerald-soft); font-weight: 700; color: var(--emerald-2); }
+.cat-select { width: 130px; flex-shrink: 0; padding: 8px 10px; font-size: 13.5px; }

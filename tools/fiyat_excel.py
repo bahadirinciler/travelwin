@@ -6,6 +6,7 @@ Kurallar (otel sahibinin verdiği):
   Haziran = Temmuz −%20 · Mayıs = Haziran −%10 · Nisan = Mayıs −%10 · Ağustos = Temmuz +%10
   1–15 Eylül = Temmuz · 16 Eylül – 30 Ekim = Mayıs
   2 kişinin dışındaki her 7+ yaş kişi: +2.000 ₺/gece · Tek kişi: −1.000 ₺/gece
+  Her fiyat yukarı 100 ₺ katına yuvarlanır (site: js/data.js seasonTable ile aynı kural).
 Tüm fiyatlar Excel formülüdür; "Parametreler" sayfasındaki değerler değişince tablo güncellenir.
 Kullanım: python3 tools/fiyat_excel.py [çıktı.xlsx]
 """
@@ -14,12 +15,12 @@ from xml.sax.saxutils import escape
 
 OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser('~/Desktop/CasaDiDatca_Fiyat_Tablosu.xlsx')
 
-P = dict(base=9000, step=0.10, jun=0.20, may=0.10, aug=0.10, extra=2000, single=1000, apr=0.10)
+P = dict(base=9000, step=0.10, jun=0.20, may=0.10, aug=0.10, extra=2000, single=1000, apr=0.10, roundTo=100)
 
 # Odalar: (ad, kategori, maks. kişi, teyit gerekiyor mu?)
 ROOMS = [
     ('Lerici', 1, 2, False), ('Orvieto', 1, 2, False),
-    ('Arezzo', 1, 3, True),
+    ('Arezzo', 1, 3, False),
     ('Lucca', 2, 3, False), ('Portofino', 2, 2, False),
     ('Iseo-Como-Maggiore', 3, 3, False), ('Garda', 3, 3, False), ('Cinque Terre', 3, 2, False),
     ('Capri', 4, 4, False), ('Elba', 4, 5, False),
@@ -30,13 +31,12 @@ SEASONS = [  # (başlık, anahtar)
 ]
 
 # ---------- Hesap (önbellek değerleri; Excel açılışta formülleri yeniden hesaplar) ----------
-def R(x): return int(round(x))
-jul = [P['base']]
-for _ in range(3): jul.append(R(jul[-1] * (1 + P['step'])))
+import math
+def UP(x): return int(math.ceil(round(x, 2) / P['roundTo']) * P['roundTo'])  # Excel: CEILING(ROUND(x;2);kat)
 price = {}
 for c in range(4):
-    j = jul[c]; jn = R(j * (1 - P['jun'])); my = R(jn * (1 - P['may'])); ag = R(j * (1 + P['aug']))
-    price[c] = dict(apr=R(my * (1 - P['apr'])), may=my, jun=jn, jul=j, aug=ag, sep1=j, sep2=my)
+    j = P['base'] * (1 + P['step']) ** c; jn = j * (1 - P['jun']); my = jn * (1 - P['may'])
+    price[c] = dict(apr=UP(my * (1 - P['apr'])), may=UP(my), jun=UP(jn), jul=UP(j), aug=UP(j * (1 + P['aug'])), sep1=UP(j), sep2=UP(my))
 
 # ---------- Hücre yardımcıları ----------
 COLS = 'ABCDEFGHIJKLMNOP'
@@ -85,15 +85,18 @@ for c in range(4):
     rooms = ', '.join(n + (' *' if w else '') for n, k, _, w in ROOMS if k == c + 1)
     t.put(0, r, f'{c + 1}. kategori', s=CAT); t.put(1, r, rooms, s=WARN if '*' in rooms else DEF)
     E = ref(COL['jul'], r)
-    fj = f'{PS}!$B$4' if c == 0 else f'ROUND({ref(COL["jul"], r - 1)}*(1+{PS}!$B$5),0)'
-    t.put(COL['jul'], r, price[c]['jul'], f=fj, s=TLB)
-    t.put(COL['jun'], r, price[c]['jun'], f=f'ROUND({E}*(1-{PS}!$B$6),0)', s=TL)
-    t.put(COL['may'], r, price[c]['may'], f=f'ROUND({ref(COL["jun"], r)}*(1-{PS}!$B$7),0)', s=TL)
-    t.put(COL['apr'], r, price[c]['apr'], f=f'ROUND({ref(COL["may"], r)}*(1-{PS}!$B$11),0)', s=TL)
-    t.put(COL['aug'], r, price[c]['aug'], f=f'ROUND({E}*(1+{PS}!$B$8),0)', s=TLB)
+    B = lambda n: f'{PS}!$B${n}'
+    xj = f'{B(4)}*(1+{B(5)})^{c}'                 # Temmuz (yuvarlanmamış)
+    xn = f'{xj}*(1-{B(6)})'; xm = f'{xn}*(1-{B(7)})'
+    UPF = lambda x: f'CEILING(ROUND({x},2),{B(12)})'
+    t.put(COL['jul'], r, price[c]['jul'], f=UPF(xj), s=TLB)
+    t.put(COL['jun'], r, price[c]['jun'], f=UPF(xn), s=TL)
+    t.put(COL['may'], r, price[c]['may'], f=UPF(xm), s=TL)
+    t.put(COL['apr'], r, price[c]['apr'], f=UPF(f'{xm}*(1-{B(11)})'), s=TL)
+    t.put(COL['aug'], r, price[c]['aug'], f=UPF(f'{xj}*(1+{B(8)})'), s=TLB)
     t.put(COL['sep1'], r, price[c]['sep1'], f=f'{E}', s=TL)
     t.put(COL['sep2'], r, price[c]['sep2'], f=f'{ref(COL["may"], r)}', s=TL)
-t.put(0, 10, '* Kategorisi teyit edilecek oda (aşağıdaki nota bakın).', s=NOTE)
+t.put(0, 10, 'Tüm fiyatlar yukarı 100 ₺ katına yuvarlanmıştır (Parametreler → Yuvarlama katı).', s=NOTE)
 t.put(0, 11, 'Ek kişi (2 kişinin dışında, 7 yaş ve üzeri): kişi başı gecelik +2.000 ₺ · Tek kişi: −1.000 ₺ → "Kişi Sayısına Göre" sayfası.', s=NOTE)
 t.put(0, 12, 'Nisan = Mayıs −%10. 31 Ekim tabloda yok (16 Eylül – 30 Ekim dönemi).', s=NOTE)
 
@@ -151,18 +154,18 @@ rows = [
     ('Ek kişi ücreti (7 yaş ve üzeri, kişi başı gecelik)', P['extra'], INPUT_TL, '2 kişinin dışındaki her kişi için'),
     ('Tek kişi indirimi (gecelik)', P['single'], INPUT_TL, '1 kişi = 2 kişi fiyatı − bu tutar'),
     ('Nisan indirimi (Mayıs\'a göre)', P['apr'], INPUT_PCT, 'Nisan = Mayıs −%10'),
+    ('Yukarı yuvarlama katı', P['roundTo'], INPUT_TL, 'Örn. 100 → 11.979 ₺ = 12.000 ₺'),
 ]
 for j, (a, v, s_, d) in enumerate(rows):
     r = 4 + j
     p.put(0, r, a, s=BOLD); p.put(1, r, v, s=s_); p.put(2, r, d, s=NOTE)
-p.put(0, 12, 'Varsayımlar (teyit edilecek)', s=TITLE)
+p.put(0, 14, 'Notlar', s=TITLE)
 for j, line in enumerate([
-    '• Arezzo hiçbir kategoride belirtilmedi; geçici olarak 1. kategoriye kondu. (Cinque Terre = 3. kategori, otel sahibi teyit etti.)',
-    '• "4. kategori: 4. kategori +%10" ifadesi "3. kategori +%10" olarak yorumlandı.',
-    '• Ara değerler tam liraya yuvarlandı (örn. 4. kategori Temmuz 11.979 ₺). İstersen 50 ₺ / 100 ₺ katlarına yuvarlayabilirim.',
-    '• Ek kişi ücreti ve tek kişi indirimi tüm sezonlarda sabit kabul edildi.',
+    '• Kategoriler otel sahibi tarafından onaylandı: 1) Lerici, Orvieto, Arezzo 2) Lucca, Portofino 3) Iseo-Como-Maggiore, Garda, Cinque Terre 4) Capri, Elba.',
+    '• Ek kişi ücreti ve tek kişi indirimi yuvarlanmış 2 kişi fiyatına eklenir/çıkarılır; 0–6 yaş ücretsizdir.',
+    '• Otel 1 Nisan – 30 Ekim arası açıktır; 31 Ekim ve sonrası satışa kapalıdır.',
 ]):
-    p.put(0, 13 + j, line, s=NOTE); p.merges.append(f'A{13 + j}:C{13 + j}')
+    p.put(0, 15 + j, line, s=NOTE); p.merges.append(f'A{15 + j}:C{15 + j}')
 
 SHEETS = [t, k, o, p]
 

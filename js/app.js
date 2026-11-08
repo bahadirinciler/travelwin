@@ -509,7 +509,31 @@
 
   /* ---------- Otel: Takvim / Fiyat ---------- */
   const isoOf = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  const calState = { month: (() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); })() };
+  // Takvim, bugünden sonraki ilk açık sezon ayından başlar (Kasım'da → Nisan).
+  const calState = { month: (() => {
+    const d = new Date();
+    for (let i = 0; i < 400; i++, d.setDate(d.getDate() + 1)) if (DB.seasonOf(isoOf(d))) return new Date(d.getFullYear(), d.getMonth(), 1);
+    return new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  })() };
+
+  // Fiyat formu alanları: [anahtar, etiket, tür] — tür 'pct' ise % olarak gösterilir
+  const PRICE_FIELDS = [
+    ['base', 'Temmuz · 1. kategori · 2 kişi', 'tl'], ['step', 'Kategori artışı (bir öncekine göre)', 'pct'],
+    ['jun', 'Haziran = Temmuz −', 'pct'], ['may', 'Mayıs = Haziran −', 'pct'], ['apr', 'Nisan = Mayıs −', 'pct'],
+    ['aug', 'Ağustos = Temmuz +', 'pct'], ['extra', 'Ek kişi (7+ yaş), kişi başı gecelik', 'tl'],
+    ['single', 'Tek kişi indirimi, gecelik', 'tl'], ['roundTo', 'Yukarı yuvarlama katı', 'tl'],
+  ];
+  function readPricing(form) {
+    const p = {};
+    PRICE_FIELDS.forEach(([k, , t]) => { const v = +form.elements[k].value; p[k] = t === 'pct' ? v / 100 : v; });
+    return p;
+  }
+  function priceMatrixHtml(biz, pricing) {
+    const t = DB.seasonTable({ ...biz.pricing, ...pricing });
+    const roomsOf = (c) => (biz.rooms || []).filter((r) => (r.cat || 1) === c).map((r) => r.name).join(', ') || '—';
+    return `<table class="matrix"><thead><tr><th>Kategori</th>${DB.SEASONS.map((x) => `<th class="num">${x.label}<small>${x.range}</small></th>`).join('')}</tr></thead>
+      <tbody>${[1, 2, 3, 4].map((c) => `<tr><td><b>${c}. kategori</b><small>${esc(roomsOf(c))}</small></td>${DB.SEASONS.map((x) => `<td class="num ${x.key === 'jul' || x.key === 'aug' ? 'peak' : ''}">${money(t[c][x.key])}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+  }
   function viewBusinessCalendar() {
     const biz = DB.business(CURRENT.business);
     const closed = new Set(biz.closed || []);
@@ -530,13 +554,15 @@
     for (let d = 1; d <= days; d++) {
       const s = isoOf(new Date(m.getFullYear(), m.getMonth(), d));
       const past = s < today;
-      const cls = [past ? 'is-past' : '', closed.has(s) ? 'is-closed' : '', booked[s] ? 'is-booked' : '', pendingDays.has(s) ? 'is-pending' : '', s === today ? 'is-today' : ''].filter(Boolean).join(' ');
-      cells += `<button type="button" class="xcal-day ${cls}" data-action="cal-toggle" data-day="${s}" ${past ? 'disabled' : ''} aria-pressed="${closed.has(s)}" aria-label="${s}${closed.has(s) ? ' kapalı' : ''}">
-        <span>${d}</span>${booked[s] ? `<small>${booked[s]} rez.</small>` : closed.has(s) ? '<small>Kapalı</small>' : pendingDays.has(s) ? '<small>Talep</small>' : ''}</button>`;
+      const off = !!biz.pricing && !DB.seasonOf(s);
+      const cls = [past ? 'is-past' : '', off && !past ? 'is-off' : '', closed.has(s) ? 'is-closed' : '', booked[s] ? 'is-booked' : '', pendingDays.has(s) ? 'is-pending' : '', s === today ? 'is-today' : ''].filter(Boolean).join(' ');
+      cells += `<button type="button" class="xcal-day ${cls}" data-action="cal-toggle" data-day="${s}" ${past || off ? 'disabled' : ''} aria-pressed="${closed.has(s)}" aria-label="${s}${closed.has(s) ? ' kapalı' : ''}">
+        <span>${d}</span>${booked[s] ? `<small>${booked[s]} rez.</small>` : closed.has(s) ? '<small>Kapalı</small>' : pendingDays.has(s) ? '<small>Talep</small>' : off && !past ? '<small>Sezon dışı</small>' : biz.pricing && !past ? `<small class="day-price">${money(DB.seasonTable(biz.pricing)[1][DB.seasonOf(s)]).replace('₺', '')}</small>` : ''}</button>`;
     }
     const thisMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const P = biz.pricing;
     return `
-      <div class="page-head"><div><h1>Takvim / Fiyat</h1><p>Satışa kapalı günleri işaretleyin ve oda fiyatlarını güncelleyin. Değişiklikler misafir rezervasyon sayfasına anında yansır.</p></div></div>
+      <div class="page-head"><div><h1>Takvim / Fiyat</h1><p>Satışa kapalı günleri işaretleyin, sezon fiyat kurallarını ve oda kategorilerini yönetin. Değişiklikler misafir rezervasyon sayfasına anında yansır.</p></div></div>
       <div class="cal-layout">
         <section class="card card-pad">
           <div class="cal-head">
@@ -545,23 +571,31 @@
             <button type="button" class="cal-nav" data-action="cal-nav" data-dir="1" aria-label="Sonraki ay">${ic('arrow')}</button>
           </div>
           <div class="xcal-grid">${['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'].map((w) => `<span class="cal-wd">${w}</span>`).join('')}${cells}</div>
-          <div class="cal-legend"><span><i class="lg-open"></i>Satışa açık</span><span><i class="lg-closed"></i>Kapalı</span><span><i class="lg-booked"></i>Rezervasyon</span><span><i class="lg-pending"></i>Bekleyen talep</span></div>
-          <p class="hint muted" style="margin:10px 0 0;font-size:12.5px">Bir güne dokunarak satışa açın / kapatın.</p>
+          <div class="cal-legend"><span><i class="lg-open"></i>Satışa açık</span><span><i class="lg-closed"></i>Kapalı</span><span><i class="lg-booked"></i>Rezervasyon</span><span><i class="lg-pending"></i>Bekleyen talep</span>${P ? '<span><i class="lg-off"></i>Sezon dışı</span>' : ''}</div>
+          <p class="hint muted" style="margin:10px 0 0;font-size:12.5px">Sezon içindeki bir güne dokunarak satışa açın / kapatın. Gün üzerindeki fiyat: 1. kategori, 2 kişi. Sezon: 1 Nisan – 30 Ekim.</p>
         </section>
-        <form class="card card-pad" id="priceForm">
-          <h2 class="gh-h2">Oda fiyatları (gecelik)</h2>
+        <section class="card card-pad">
+          <h2 class="gh-h2">Oda kategorileri</h2>
           <div class="price-list">
             ${(biz.rooms || []).map((r) => `
               <div class="price-row">
                 ${r.img ? `<img class="price-img" src="${esc(r.img)}" alt="" loading="lazy" />` : ''}
-                <div class="price-txt"><b>${esc(r.name)}</b><small>${r.guests} kişiye kadar · elçi linkiyle ${money(DB.guestPrice(r.price, true).total)}</small></div>
-                <div class="price-input"><span>₺</span><input class="input" type="number" name="${r.id}" min="100" step="50" value="${r.price}" aria-label="${esc(r.name)} gecelik fiyat" /></div>
+                <div class="price-txt"><b>${esc(r.name)}</b><small>${r.guests} kişiye kadar${P ? ` · Temmuz ${money(DB.seasonTable(P)[r.cat || 1].jul)}` : ''}</small></div>
+                ${P ? `<select class="select cat-select" form="priceForm" name="cat:${r.id}" aria-label="${esc(r.name)} kategorisi">${[1, 2, 3, 4].map((c) => `<option value="${c}" ${(r.cat || 1) === c ? 'selected' : ''}>${c}. kategori</option>`).join('')}</select>` : ''}
               </div>`).join('')}
           </div>
-          <div class="info-box">${ic('info')}<span>Elçi linkiyle gelen misafir bu fiyatlardan %${PRICING.GUEST} indirim görür.</span></div>
-          <button class="btn btn-primary btn-block" type="submit">${ic('check')} Fiyatları kaydet</button>
-        </form>
-      </div>`;
+        </section>
+      </div>
+      ${P ? `
+      <form class="card card-pad price-rules" id="priceForm">
+        <div class="sec-row"><h2 class="gh-h2">Sezon fiyatları (2 kişi, gecelik, kahvaltı dahil)</h2></div>
+        <div class="rule-grid">
+          ${PRICE_FIELDS.map(([k, label, t]) => `<label class="rule"><span>${label}</span><span class="rule-in">${t === 'pct' ? '%' : '₺'}<input class="input" type="number" name="${k}" min="0" step="${t === 'pct' ? 1 : 50}" value="${t === 'pct' ? Math.round(P[k] * 100) : P[k]}" /></span></label>`).join('')}
+        </div>
+        <div class="table-wrap" id="priceMatrix">${priceMatrixHtml(biz, {})}</div>
+        <div class="info-box">${ic('info')}<span>1–15 Eylül = Temmuz · 16 Eylül–30 Ekim = Mayıs. Fiyatlar yukarı ${money(P.roundTo)} katına yuvarlanır. 2 kişinin dışındaki her 7+ yaş kişi +${money(P.extra)}, tek kişi −${money(P.single)}, 0–6 yaş ücretsiz. Elçi linkiyle gelen misafir %${PRICING.GUEST} indirim görür.</span></div>
+        <button class="btn btn-primary" type="submit">${ic('check')} Fiyatları ve kategorileri kaydet</button>
+      </form>` : ''}`;
   }
 
   /* ---------- Otel: Hakediş Raporu ---------- */
@@ -823,6 +857,12 @@
   document.addEventListener('input', (e) => {
     const t = e.target;
     if (t.id === 'lb-code') { updateLbPreview(); return; }
+    const pf = t.form?.id === 'priceForm' ? t.form : null;
+    if (pf) {
+      const biz = DB.business(CURRENT.business);
+      document.getElementById('priceMatrix').innerHTML = priceMatrixHtml(biz, readPricing(pf));
+      return;
+    }
     if (t.id === 'offerSearch') {
       offerFilter.q = t.value;
       refreshOfferGrid();
@@ -849,9 +889,11 @@
     const f = e.target;
 
     if (f.id === 'priceForm') {
-      let n = 0;
-      new FormData(f).forEach((v, k) => { if (DB.setRoomPrice(CURRENT.business, k, +v)) n++; });
-      toast(n ? 'Fiyatlar kaydedildi' : 'Geçerli bir fiyat girin');
+      const p = readPricing(f);
+      if (!(p.base > 0) || !(p.roundTo > 0) || Object.values(p).some((v) => !Number.isFinite(v) || v < 0)) { toast('Lütfen geçerli değerler girin'); return; }
+      DB.setPricing(CURRENT.business, p);
+      [...f.elements].filter((el) => el.name?.startsWith('cat:')).forEach((el) => DB.setRoomCat(CURRENT.business, el.name.slice(4), el.value));
+      toast('Fiyatlar ve kategoriler kaydedildi');
       rerender();
       return;
     }

@@ -79,12 +79,23 @@
 
   /* ---------- Durum ---------- */
   const start = new Date();
+  const thisMonth = new Date(start.getFullYear(), start.getMonth(), 1);
+  // Takvim, bugünden sonraki ilk açık sezon gününün ayından başlar (Kasım'da → Nisan).
+  function firstOpenMonth() {
+    if (!biz.pricing) return thisMonth;
+    for (let d = new Date(start), i = 0; i < 400; i++, d = addDays(d, 1)) {
+      if (DB.seasonOf(iso(d))) return new Date(d.getFullYear(), d.getMonth(), 1);
+    }
+    return thisMonth;
+  }
   const st = {
     roomId: rooms[0]?.id,
-    checkIn: null, checkOut: null, guests: 2,
-    month: new Date(start.getFullYear(), start.getMonth(), 1),
+    checkIn: null, checkOut: null, guests: 2, kids: 0,
+    month: firstOpenMonth(),
   };
   const room = () => rooms.find((r) => r.id === st.roomId) || rooms[0];
+  const offSeason = (s) => !!biz.pricing && !DB.seasonOf(s);
+  const seasonLabel = (k) => DB.SEASONS.find((x) => x.key === k)?.label || '';
 
   // Kapalı günler: otelin kapattığı tarihler + seçili odada onaylanmış konaklamalar.
   function blockedSet() {
@@ -95,10 +106,20 @@
     return set;
   }
 
-  function quote() {
+  /** Seçili oda + tarih + kişi için teklif: gece gece sezon fiyatı, sonra %5 misafir indirimi. */
+  function quote(r = room()) {
     if (!st.checkIn || !st.checkOut) return null;
-    const nights = nightsBetween(st.checkIn, st.checkOut);
-    return { nights, ...DB.guestPrice(nights * room().price, hasRef) };
+    const persons = Math.max(1, Math.min(st.guests, r.guests));
+    const sq = DB.stayQuote(biz, r, st.checkIn, st.checkOut, persons);
+    if (sq.error) return null;
+    // aynı sezon + aynı fiyattaki geceleri grupla
+    const groups = [];
+    sq.nights.forEach((n) => {
+      const g = groups[groups.length - 1];
+      if (g && g.season === n.season && g.price === n.price) g.count++;
+      else groups.push({ season: n.season, price: n.price, count: 1 });
+    });
+    return { nights: sq.nights.length, groups, persons, ...DB.guestPrice(sq.list, hasRef) };
   }
 
   /* ---------- Takvim ---------- */
@@ -109,20 +130,24 @@
     const lead = (first.getDay() + 6) % 7; // pazartesi ile başla
     const days = new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate();
     const blocked = blockedSet();
-    const canPrev = m > new Date(start.getFullYear(), start.getMonth(), 1);
+    const canPrev = m > thisMonth;
+    const monthOff = biz.pricing && Array.from({ length: days }, (_, i) => iso(new Date(m.getFullYear(), m.getMonth(), i + 1))).every(offSeason);
     let cells = '';
     for (let i = 0; i < lead; i++) cells += '<span class="cal-pad"></span>';
     for (let d = 1; d <= days; d++) {
       const s = iso(new Date(m.getFullYear(), m.getMonth(), d));
       const past = s < today;
-      const closed = blocked.has(s);
+      // Çıkış günü seçilirken: o gün kapalı/sezon dışı olsa da önceki gece açıksa çıkış yapılabilir.
+      const asCheckout = st.checkIn && !st.checkOut && s > st.checkIn && !offSeason(iso(addDays(parse(s), -1))) && !blocked.has(iso(addDays(parse(s), -1)));
+      const off = offSeason(s) && !asCheckout;
+      const closed = blocked.has(s) && !asCheckout;
       const cls = [
-        past ? 'is-past' : '', closed ? 'is-closed' : '',
+        past ? 'is-past' : '', off && !past ? 'is-off' : '', closed ? 'is-closed' : '',
         s === st.checkIn ? 'is-start' : '', s === st.checkOut ? 'is-end' : '',
         st.checkIn && st.checkOut && s > st.checkIn && s < st.checkOut ? 'is-range' : '',
         s === today ? 'is-today' : '',
       ].filter(Boolean).join(' ');
-      cells += `<button type="button" class="cal-day ${cls}" data-day="${s}" ${past || closed ? 'disabled' : ''} aria-label="${fmtLong(s)}${closed ? ' (dolu)' : ''}">${d}</button>`;
+      cells += `<button type="button" class="cal-day ${cls}" data-day="${s}" ${past || closed || off ? 'disabled' : ''} aria-label="${fmtLong(s)}${closed ? ' (dolu)' : off ? ' (sezon dışı)' : ''}">${d}</button>`;
     }
     return `
       <div class="cal">
@@ -132,7 +157,8 @@
           <button type="button" class="cal-nav" data-cal="1" aria-label="Sonraki ay">${ic('arrow')}</button>
         </div>
         <div class="cal-grid">${WD.map((w) => `<span class="cal-wd">${w}</span>`).join('')}${cells}</div>
-        <div class="cal-legend"><span><i class="lg-sel"></i>Seçili</span><span><i class="lg-closed"></i>Dolu / kapalı</span></div>
+        ${monthOff ? `<p class="cal-note">${ic('info')} Otel 1 Nisan – 30 Ekim arasında açıktır.</p>` : ''}
+        <div class="cal-legend"><span><i class="lg-sel"></i>Seçili</span><span><i class="lg-closed"></i>Dolu / kapalı</span>${biz.pricing ? '<span><i class="lg-off"></i>Sezon dışı</span>' : ''}</div>
       </div>`;
   }
 
@@ -145,14 +171,36 @@
     return `
       <div class="sum-dates"><div><span>Giriş</span><b>${fmtLong(st.checkIn)}</b></div><div><span>Çıkış</span><b>${fmtLong(st.checkOut)}</b></div></div>
       <div class="sum-rows">
-        <div><span>${money(r.price)} × ${q.nights} gece</span><b>${money(q.list)}</b></div>
+        ${q.groups.map((g) => `<div><span>${g.season ? `${seasonLabel(g.season)} · ` : ''}${g.count} gece × ${money(g.price)}</span><b>${money(g.count * g.price)}</b></div>`).join('')}
+        ${biz.pricing && q.persons !== 2 ? `<div class="sum-note"><span>${q.persons === 1 ? `Tek kişi: gecelik −${money(biz.pricing.single)} dahil` : `${q.persons} kişi: gecelik +${money((q.persons - 2) * biz.pricing.extra)} dahil`}${st.kids ? ` · ${st.kids} çocuk (0–6 yaş) ücretsiz` : ''}</span></div>` : st.kids ? `<div class="sum-note"><span>${st.kids} çocuk (0–6 yaş) ücretsiz</span></div>` : ''}
         ${hasRef ? `<div class="sum-disc"><span>${ic('gift')} Misafir indirimi (%${PRICING.GUEST})</span><b>− ${money(q.discount)}</b></div>` : ''}
         <div class="sum-total"><span>${hasRef ? 'Net fiyat' : 'Toplam'}</span><span class="price-pair">${hasRef ? `<s>${money(q.list)}</s>` : ''}<b>${money(q.total)}</b></span></div>
       </div>`;
   }
 
+  /** Oda kartı fiyatı: tarih seçiliyse o konaklamanın gecelik ortalaması, değilse en düşük sezon fiyatı. */
+  function roomPriceHtml(x) {
+    const q = quote(x);
+    let list, label;
+    if (q) { list = Math.round(q.list / q.nights); label = q.groups.length > 1 ? '/ gece (ort.)' : '/ gece'; }
+    else { list = DB.fromPrice(biz, x); label = biz.pricing ? "/ gece'den · 2 kişi" : '/ gece'; }
+    const net = DB.guestPrice(list, hasRef).total;
+    return `<span class="gh-room-price" data-rp="${x.id}">${hasRef ? `<s>${money(list)}</s>` : ''}<b>${money(net)}</b><small>${label}</small></span>`;
+  }
+
+  /** Seçili odanın sezon fiyat tablosu (2 kişi, gecelik). */
+  function seasonTableHtml(r) {
+    if (!biz.pricing) return '';
+    const t = DB.seasonTable(biz.pricing)[r.cat || 1];
+    return `<details class="gh-prices"><summary>${ic('calendar')} ${esc(r.name)} · sezon fiyatları (2 kişi, gecelik)</summary>
+      <div class="table-wrap"><table><thead><tr><th>Dönem</th><th class="num">Fiyat</th>${hasRef ? `<th class="num">Size özel (−%${PRICING.GUEST})</th>` : ''}</tr></thead>
+      <tbody>${DB.SEASONS.map((x) => `<tr><td>${x.range}</td><td class="num">${money(t[x.key])}</td>${hasRef ? `<td class="num"><b>${money(DB.guestPrice(t[x.key], true).total)}</b></td>` : ''}</tr>`).join('')}</tbody></table></div>
+      <p class="gh-note">${ic('info')} 2 kişinin dışındaki her kişi (7 yaş ve üzeri) gecelik +${money(biz.pricing.extra)} · tek kişi −${money(biz.pricing.single)} · 0–6 yaş ücretsiz.</p></details>`;
+  }
+
   function render() {
     const r = room();
+    if (st.guests > r.guests) st.guests = r.guests;
     $root.innerHTML = `
       <section class="gh-hero">
         <div class="gh-cover ${biz.cover ? 'has-photo' : 'cover-otel'}">
@@ -188,9 +236,10 @@
                   <input type="radio" name="room" value="${x.id}" ${x.id === st.roomId ? 'checked' : ''} />
                   ${x.img ? `<span class="gh-room-img"><img src="${esc(x.img)}" alt="${esc(x.name)} odası" loading="lazy" /></span>` : `<span class="gh-room-ico">${ic('bed')}</span>`}
                   <span class="gh-room-txt"><b>${esc(x.name)}</b>${x.desc ? `<small>${esc(x.desc)}</small>` : ''}<small>${x.guests} kişiye kadar</small></span>
-                  <span class="gh-room-price">${hasRef ? `<s>${money(x.price)}</s>` : ''}<b>${money(hasRef ? DB.guestPrice(x.price, true).total : x.price)}</b><small>/ gece</small></span>
+                  ${roomPriceHtml(x)}
                 </label>`).join('')}
             </div>
+            ${seasonTableHtml(r)}
           </section>
 
           <section class="card card-pad">
@@ -205,8 +254,9 @@
             <div class="gh-room-sel">${ic('bed')} ${esc(r.name)}</div>
             <div id="sumWrap">${summaryHtml()}</div>
             <div class="form-grid">
-              <div class="field"><label for="g-guests">Kişi</label><select class="select" id="g-guests" name="guests">${Array.from({ length: r.guests }, (_, i) => i + 1).map((n) => `<option ${n === Math.min(st.guests, r.guests) ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
-              <div class="field"><label for="g-phone">Telefon</label><input class="input" id="g-phone" name="phone" type="tel" autocomplete="tel" required placeholder="05xx xxx xx xx" /></div>
+              <div class="field"><label for="g-guests">Kişi (7+ yaş)</label><select class="select" id="g-guests" name="guests">${Array.from({ length: r.guests }, (_, i) => i + 1).map((n) => `<option ${n === st.guests ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
+              <div class="field"><label for="g-kids">Çocuk (0–6 yaş)</label><select class="select" id="g-kids" name="kids">${[0, 1, 2].map((n) => `<option value="${n}" ${n === st.kids ? 'selected' : ''}>${n ? `${n} · ücretsiz` : 'Yok'}</option>`).join('')}</select></div>
+              <div class="field full"><label for="g-phone">Telefon</label><input class="input" id="g-phone" name="phone" type="tel" autocomplete="tel" required placeholder="05xx xxx xx xx" /></div>
               <div class="field full"><label for="g-name">Ad soyad</label><input class="input" id="g-name" name="guestName" autocomplete="name" required placeholder="Adınız ve soyadınız" /></div>
             </div>
             <button class="btn btn-accent btn-block btn-book" type="submit">${ic('calendar')} Rezervasyon talebi gönder</button>
@@ -216,9 +266,13 @@
       </div>`;
   }
 
+  function refreshPrices() {
+    document.getElementById('sumWrap').innerHTML = summaryHtml();
+    $root.querySelectorAll('[data-rp]').forEach((el) => { el.outerHTML = roomPriceHtml(rooms.find((x) => x.id === el.dataset.rp)); });
+  }
   function refreshBooking() {
     document.getElementById('calWrap').innerHTML = calendarHtml();
-    document.getElementById('sumWrap').innerHTML = summaryHtml();
+    refreshPrices();
   }
 
   if (!rooms.length) {
@@ -276,6 +330,7 @@
       const blocked = blockedSet();
       for (let d = parse(st.checkIn); iso(d) < s; d = addDays(d, 1)) {
         if (blocked.has(iso(d))) { toast('Seçtiğiniz aralıkta dolu bir gün var.'); return; }
+        if (offSeason(iso(d))) { toast('Seçtiğiniz aralık sezon dışı günler içeriyor (otel 1 Nisan – 30 Ekim açık).'); return; }
       }
       st.checkOut = s;
     }
@@ -293,7 +348,11 @@
       }
       render();
     } else if (e.target.id === 'g-guests') {
-      st.guests = +e.target.value;
+      st.guests = Math.min(room().guests, Math.max(1, +e.target.value || 1));
+      refreshPrices();
+    } else if (e.target.id === 'g-kids') {
+      st.kids = +e.target.value;
+      refreshPrices();
     }
   });
 
@@ -311,7 +370,7 @@
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$modal.hidden) closeModal(); });
 
   function confirmHtml() {
-    const { name, guests, quote: q } = pending;
+    const { name, guests, kids, quote: q } = pending;
     return `
       <div class="modal-head">
         <div><span class="eyebrow">${ic('shield')} Güvenli talep</span><h2 id="modalTitle" style="font-size:22px;margin-top:10px">Rezervasyon talebinizi onaylayın</h2></div>
@@ -323,7 +382,7 @@
           <div class="cf-sum-grid">
             <div><span>Giriş</span><b>${fmtLong(st.checkIn)}</b></div>
             <div><span>Çıkış</span><b>${fmtLong(st.checkOut)}</b></div>
-            <div><span>Misafir</span><b>${esc(name)} · ${guests} kişi</b></div>
+            <div><span>Misafir</span><b>${esc(name)} · ${guests} kişi${kids ? ` + ${kids} çocuk` : ''}</b></div>
             <div><span>${q.nights} gece</span><b class="price-pair">${q.discount ? `<s>${money(q.list)}</s>` : ''}${money(q.total)}</b></div>
           </div>
           ${q.discount ? `<div class="cf-disc">${ic('gift')} %${PRICING.GUEST} misafir indirimi: ${money(q.discount)} tasarruf</div>` : ''}
@@ -377,7 +436,7 @@
     const name = f.guestName.value.trim();
     const phone = f.phone.value.trim();
     if (!name || !phone) { toast('Ad soyad ve telefon gerekli.'); (name ? f.phone : f.guestName).focus(); return; }
-    pending = { name, phone, guests: +f.guests.value, quote: q };
+    pending = { name, phone, guests: q.persons, kids: st.kids, quote: q };
     openModal(confirmHtml());
   });
 
@@ -405,10 +464,10 @@
     if (err) { toast(err[1]); f.querySelector(`#${err[0]}`).focus(); return; }
 
     // Kart bilgisi saklanmaz; yalnızca talep kaydedilir.
-    const { name, phone, guests, quote: q } = pending;
+    const { name, phone, guests, kids, quote: q } = pending;
     const req = DB.createRequest({
       businessId: biz.id, offerId: offer?.id || null, code: hasRef ? code : null, roomId: st.roomId,
-      guestName: name, phone, guests,
+      guestName: name, phone, guests, kids,
       checkIn: st.checkIn, checkOut: st.checkOut, nights: q.nights,
       list: q.list, discount: q.discount, total: q.total,
     });
