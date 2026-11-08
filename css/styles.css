@@ -74,14 +74,14 @@ h1, h2, h3, h4 { margin: 0; line-height: 1.2; letter-spacing: -.01em; }
   border-bottom: 1px solid var(--line);
 }
 .brand { display: flex; align-items: center; gap: 10px; color: var(--ink); }
-/* Logo: "T" + ₺ birleşimi (Turizmlink = turizm + kazanç) — assets/favicon.svg ile aynı çizim */
+/* Logo: ince zümrüt halka içinde ₺ (madeni para) + "Turizm·link" yazısı — assets/favicon.svg ile aynı */
 .brand-mark {
-  width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+  width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
   display: grid; place-items: center;
-  background: var(--navy); color: var(--emerald);
-  box-shadow: inset 0 0 0 1.5px rgba(52,211,153,.45);
+  border: 2.5px solid var(--emerald); color: var(--emerald); background: transparent;
+  font-weight: 800; font-size: 19px; line-height: 1;
 }
-.brand-mark svg { width: 100%; height: 100%; display: block; }
+.brand-light .brand-mark { border-color: var(--emerald-3); color: var(--emerald-3); }
 .brand-name { font-size: 18px; font-weight: 600; }
 .brand-name b { color: var(--emerald); font-weight: 800; }
 
@@ -947,7 +947,7 @@ body.guest { background: #f8fafc; }
 .gnav-in { height: 60px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .gnav-hotel { font-size: 18px; font-weight: 800; color: var(--navy); letter-spacing: -.01em; }
 .gnav-by { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; color: var(--ink-3); }
-.brand-mark.sm { width: 24px; height: 24px; border-radius: 7px; }
+.brand-mark.sm { width: 24px; height: 24px; border-width: 2px; font-size: 13px; }
 
 .ghotel { padding-block: 22px 64px; }
 .gh-hero { margin-bottom: 20px; }
