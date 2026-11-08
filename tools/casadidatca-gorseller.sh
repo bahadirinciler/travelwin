@@ -18,3 +18,11 @@ for p in "DIŞ ALAN/IMG_6771.jpg:villa-aksam:0.5" "DIŞ ALAN/IMG_6735.jpg:havuz:
 done
 mkdir -p "$D/story/thumbs"
 for f in "$D"/story/*.jpg; do sips -Z 640 -s formatOptions 70 "$f" --out "$D/story/thumbs/$(basename "$f")" >/dev/null; done
+# Capri (bahçe evi) — telefon çekimi, ayrı klasörde
+C="$HOME/Desktop/GORSELLER/CASADIDATCA/OTEL FOTOĞRAF.../CAPRİ"
+runc(){ Q=$Q "$R" "$C/$1" "$D/$2" $3 $4 $5 $6 $7 >/dev/null || echo "FAIL $2"; }
+Q=0.7 runc "IMG_20250621_120052.jpg" rooms/capri.jpg fit 1100
+Q=0.68 runc "IMG_20250621_120052.jpg" gallery/capri-veranda.jpg fit 1600
+Q=0.66 runc "IMG_20250621_120052.jpg" thumbs/capri-veranda.jpg fit 640
+Q=0.74 runc "IMG_20250621_115839.jpg" story/capri-bahce.jpg cover 1080 1920 0.5 0.5
+sips -Z 640 -s formatOptions 70 "$D/story/capri-bahce.jpg" --out "$D/story/thumbs/capri-bahce.jpg" >/dev/null

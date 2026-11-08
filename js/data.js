@@ -1,7 +1,7 @@
 /* Turizmlink — demo veri katmanı (localStorage). Backend gelene kadar mock "API". */
 (function () {
-  // v4: Casa Di Datça gerçek odaları ve fotoğrafları — eski demo verisi yerine yeni seed yüklenir.
-  const KEY = 'turizmlink:v4';
+  // v5: Casa Di Datça gerçek odaları (Capri dahil) ve fotoğrafları — eski demo verisi yerine yeni seed yüklenir.
+  const KEY = 'turizmlink:v5';
 
   /* ---- Gelir modeli ----
      Satış: otel, misafirin ödediği tutar üzerinden toplam %7 öder → %5 elçiye (net), %2 Turizmlink'e.
@@ -41,12 +41,12 @@
           gallery: [
             ['havuz-aksam', 'Akşam havuz başı'], ['tas-villa', 'Taş villa'], ['restoran-teras', 'Restoran terası'],
             ['kahvalti', 'Kahvaltı'], ['drone-gunbatimi', 'Gün batımında otel'], ['salon-manzara', 'Manzaralı salon'],
-            ['somine-kutuphane', 'Şömineli kütüphane'], ['tas-kemer', 'Taş kemerler'], ['bahce-yolu', 'Bahçe yolu'], ['havuz-gece', 'Gece havuz'],
+            ['somine-kutuphane', 'Şömineli kütüphane'], ['tas-kemer', 'Taş kemerler'], ['bahce-yolu', 'Bahçe yolu'], ['havuz-gece', 'Gece havuz'], ['capri-veranda', 'Capri bahçe evi verandası'],
           ].map(([f, t]) => ({ src: 'assets/casadidatca/gallery/' + f + '.jpg', thumb: 'assets/casadidatca/thumbs/' + f + '.jpg', title: t })),
           media: [
             ['villa-aksam', 'Taş villa, akşam', 'Story'], ['havuz', 'Havuz başı', 'Reels kapağı'], ['restoran', 'Restoran terası', 'Story'],
             ['kahvalti', 'Kahvaltı sofrası', 'Reels kapağı'], ['yesil-kapi', 'Yeşil kapı', 'Story'], ['tas-kemer', 'Taş kemerler', 'Story'],
-            ['drone', 'Gün batımında Datça', 'Reels kapağı'], ['oda', 'Cinque Terre odası', 'Story'],
+            ['drone', 'Gün batımında Datça', 'Reels kapağı'], ['oda', 'Cinque Terre odası', 'Story'], ['capri-bahce', 'Capri bahçe evi', 'Story'],
           ].map(([f, t, fmt]) => ({ id: f, src: 'assets/casadidatca/story/' + f + '.jpg', thumb: 'assets/casadidatca/story/thumbs/' + f + '.jpg', title: t, format: fmt })),
           // Fiyatlar örnek değerdir; otel extranet → Takvim / Fiyat'tan günceller.
           rooms: [
@@ -58,6 +58,7 @@
             { id: 'lucca', name: 'Lucca', desc: 'Tek kişilik yataklar + oturma köşesi', guests: 3, price: 8500, img: 'assets/casadidatca/rooms/lucca.jpg' },
             { id: 'garda', name: 'Garda', desc: 'Geniş oda · bahçeye açılan kapı', guests: 3, price: 9000, img: 'assets/casadidatca/rooms/garda.jpg' },
             { id: 'iseo', name: 'Iseo-Como-Maggiore', desc: 'Geniş oda · bahçeye açılan kapı', guests: 3, price: 9000, img: 'assets/casadidatca/rooms/iseo.jpg' },
+            { id: 'capri', name: 'Capri', desc: 'Bahçe evi · veranda ve mutfak', guests: 4, price: 11000, img: 'assets/casadidatca/rooms/capri.jpg' },
             { id: 'elba', name: 'Elba', desc: 'Aile dairesi · mutfak ve oturma alanı', guests: 5, price: 12500, img: 'assets/casadidatca/rooms/elba.jpg' },
           ],
           // Otelin kapattığı günler (extranet'te yönetilecek)
