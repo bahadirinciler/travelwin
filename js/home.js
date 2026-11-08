@@ -7,7 +7,6 @@
 
   hydrate();
   document.getElementById('year').textContent = new Date().getFullYear();
-  document.querySelectorAll('[data-fee]').forEach((el) => (el.textContent = money(PRICING.BARTER_FEE)));
 
   // Navbar: kaydırınca gölge
   const nav = document.getElementById('lnav');
