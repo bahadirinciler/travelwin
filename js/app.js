@@ -7,7 +7,7 @@
   const $modalCard = document.getElementById('modalCard');
   const $toast = document.getElementById('toast');
   const PORTAL = document.body.dataset.portal === 'business' ? 'business' : 'creator';
-  const HOME_ROUTE = PORTAL === 'business' ? '/b/dashboard' : '/c/offers';
+  const HOME_ROUTE = PORTAL === 'business' ? '/b/dashboard' : '/c/dashboard';
 
   /* ---------- Yardımcılar ---------- */
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -110,18 +110,22 @@
   }
 
   /* ---------- Navigasyon ---------- */
+  // group: kenar menüde başlık; short: mobil alt menü etiketi; mobile:false → alt menüde gösterme
   const NAV = {
     creator: [
-      { href: '#/c/offers', label: 'Teklifler', icon: 'compass' },
-      { href: '#/c/apps', label: 'Linklerim', icon: 'link' },
+      { href: '#/c/dashboard', label: 'Panel', icon: 'grid' },
+      { href: '#/c/offers', label: 'Oteller', icon: 'compass' },
+      { href: '#/c/apps', label: 'Başvurular', icon: 'inbox' },
+      { href: '#/c/media', label: 'Medya Kiti', icon: 'video' },
       { href: '#/c/earnings', label: 'Cüzdan', icon: 'wallet' },
     ],
     business: [
-      { href: '#/b/dashboard', label: 'Panel', icon: 'grid' },
-      { href: '#/b/offers', label: 'Tekliflerim', icon: 'tag' },
-      { href: '#/b/requests', label: 'Ön talepler', icon: 'calendar' },
-      { href: '#/b/apps', label: 'Başvurular', icon: 'inbox' },
-      { href: '#/b/new', label: 'Yeni teklif', icon: 'plus' },
+      { href: '#/b/dashboard', label: 'Dashboard', short: 'Panel', icon: 'grid', group: 'Otel yönetimi' },
+      { href: '#/b/requests', label: 'Gelen Rezervasyon Talepleri', short: 'Talepler', icon: 'inbox', group: 'Otel yönetimi' },
+      { href: '#/b/calendar', label: 'Takvim / Fiyat', short: 'Takvim', icon: 'calendar', group: 'Otel yönetimi' },
+      { href: '#/b/payouts', label: 'Hakediş Raporu', short: 'Hakediş', icon: 'chart', group: 'Otel yönetimi' },
+      { href: '#/b/apps', label: 'Elçi başvuruları', short: 'Elçiler', icon: 'users', group: 'Elçi programı' },
+      { href: '#/b/offers', label: 'Tekliflerim', icon: 'tag', group: 'Elçi programı', mobile: false },
     ],
   };
 
@@ -132,12 +136,21 @@
       '#/b/apps': DB.applications({ businessId: CURRENT.business, status: 'pending' }).length,
       '#/b/requests': DB.requests({ businessId: CURRENT.business, status: 'pending' }).length,
     } : {};
-    const isActive = (href) => path === href.slice(1);
-    document.getElementById('topnav').innerHTML = items
-      .map((i) => `<a href="${i.href}" class="${isActive(i.href) ? 'active' : ''}">${ic(i.icon)} ${i.label}${badges[i.href] ? `<span class="nav-count">${badges[i.href]}</span>` : ''}</a>`)
-      .join('');
-    document.getElementById('bottomnav').innerHTML = items
-      .map((i) => `<a href="${i.href}" class="${isActive(i.href) ? 'active' : ''}">${ic(i.icon)}${i.label}${badges[i.href] ? `<span class="badge-dot">${badges[i.href]}</span>` : ''}</a>`)
+    const isActive = (href) => path === href.slice(1) || (href === '#/b/offers' && path === '/b/new');
+    const side = document.getElementById('sidenav');
+    if (side) {
+      const groups = [...new Set(items.map((i) => i.group))];
+      side.innerHTML = groups.map((g) => `
+        <div class="side-group"><div class="side-title">${g}</div>
+          ${items.filter((i) => i.group === g).map((i) => `<a href="${i.href}" class="${isActive(i.href) ? 'active' : ''}">${ic(i.icon)}<span>${i.label}</span>${badges[i.href] ? `<span class="nav-count">${badges[i.href]}</span>` : ''}</a>`).join('')}
+        </div>`).join('');
+    } else {
+      document.getElementById('topnav').innerHTML = items
+        .map((i) => `<a href="${i.href}" class="${isActive(i.href) ? 'active' : ''}">${ic(i.icon)} ${i.label}${badges[i.href] ? `<span class="nav-count">${badges[i.href]}</span>` : ''}</a>`)
+        .join('');
+    }
+    document.getElementById('bottomnav').innerHTML = items.filter((i) => i.mobile !== false)
+      .map((i) => `<a href="${i.href}" class="${isActive(i.href) ? 'active' : ''}">${ic(i.icon)}${i.short || i.label}${badges[i.href] ? `<span class="badge-dot">${badges[i.href]}</span>` : ''}</a>`)
       .join('');
   }
 
@@ -178,12 +191,97 @@
 
   /* ================= GÖRÜNÜMLER ================= */
 
+  /* ---------- Elçi: Panel (metrikler + link oluşturucu) ---------- */
+  const lb = { appId: null };
+  // Butik oteller (oda listesi olanlar) önce gelir; varsayılan seçim Casa Di Datça olur.
+  function myApproved() {
+    const isHotel = (a) => (DB.business(DB.offer(a.offerId)?.businessId)?.rooms?.length ? 1 : 0);
+    return DB.applications({ creatorId: CURRENT.creator, status: 'approved' }).sort((x, y) => isHotel(y) - isHotel(x));
+  }
+  function hotelOf(a) { const o = DB.offer(a.offerId); return { o, b: o && DB.business(o.businessId) }; }
+
+  function linkBuilderHtml() {
+    const apps = myApproved();
+    if (!apps.length) {
+      return `<div class="card card-pad lb">${empty('link', 'Henüz linkin yok', 'Bir otele başvur; onaylandığında kendi ref kodunla link oluşturabilirsin.', '<a class="btn btn-primary" href="#/c/offers">Otelleri gör</a>')}</div>`;
+    }
+    if (!apps.some((a) => a.id === lb.appId)) lb.appId = apps[0].id;
+    const cur = apps.find((a) => a.id === lb.appId);
+    return `
+      <section class="card card-pad lb" aria-labelledby="lb-title">
+        <div class="lb-head">
+          <span class="lb-ico">${ic('link')}</span>
+          <div><h2 id="lb-title">Link Oluşturucu</h2><p>Ref kodunu kendin belirle; linkinle gelen misafir %${PRICING.GUEST} indirim alır, sen %${PRICING.CREATOR} net kazanırsın.</p></div>
+        </div>
+        <div class="lb-form">
+          <div class="field"><label for="lb-app">Otel</label>
+            <select class="select" id="lb-app">${apps.map((a) => { const { b, o } = hotelOf(a); return `<option value="${a.id}" ${a.id === cur.id ? 'selected' : ''}>${esc(b?.name || o?.title)}</option>`; }).join('')}</select></div>
+          <div class="field"><label for="lb-code">Ref kodun</label>
+            <input class="input lb-code" id="lb-code" value="${esc(cur.code)}" maxlength="20" autocomplete="off" spellcheck="false" placeholder="ör. AYSE-DATCA" />
+            <span class="hint">4–20 karakter: harf, rakam ve tire.</span></div>
+        </div>
+        <div class="lb-out">
+          <code id="lb-url">${esc(DB.affiliateUrl(cur.code))}</code>
+          <button class="btn btn-success" data-action="lb-copy">${ic('copy')} Linkimi Kopyala</button>
+          <a class="btn btn-ghost" id="lb-test" href="${esc(DB.affiliateUrl(cur.code))}" target="_blank" rel="noopener">${ic('external')} Önizle</a>
+        </div>
+      </section>`;
+  }
+
+  function viewCreatorDashboard() {
+    const me = DB.creator(CURRENT.creator);
+    const apps = myApproved();
+    const clicks = apps.reduce((n, a) => n + a.clicks, 0);
+    const balance = apps.reduce((n, a) => n + DB.commissionOf(a), 0);
+    const pend = DB.pendingRequestsFor(me.id);
+    const pendComm = pend.reduce((n, q) => n + pct(q.total, PRICING.CREATOR), 0);
+    return `
+      <div class="page-head"><div><h1>Merhaba ${esc(me.name.split(' ')[0])}</h1><p>${esc(me.handle)} · Turizmlink Elçisi · %${PRICING.CREATOR} net komisyon</p></div></div>
+      <div class="grid grid-stats grid-3">
+        ${stat({ label: 'Tıklanma Sayısı', value: num.format(clicks), sub: `${apps.length} aktif link`, icon: 'pointer' })}
+        ${stat({ label: 'Bekleyen Rezervasyonlar', value: num.format(pend.length), sub: pend.length ? `Onaylanırsa +${money(pendComm)}` : 'Otel onayı bekleyen yok', icon: 'clock' })}
+        ${stat({ label: `Kazanılan Toplam Bakiye (Net %${PRICING.CREATOR})`, value: money(balance), sub: 'Kesintisiz, cüzdanında', icon: 'wallet', highlight: true })}
+      </div>
+      <div id="lbWrap">${linkBuilderHtml()}</div>
+      <h2 class="section-title">Bekleyen rezervasyonlar</h2>
+      ${pend.length ? `<div class="card table-wrap"><table>
+        <thead><tr><th>Otel</th><th>Tarih</th><th>Kod</th><th class="num">Tutar</th><th class="num">Kazancın (%${PRICING.CREATOR})</th></tr></thead>
+        <tbody>${pend.map((q) => `<tr><td>${esc(DB.business(q.businessId)?.name)}</td><td>${fmtDay(q.checkIn)} → ${fmtDay(q.checkOut)}</td><td><code>${esc(q.code)}</code></td><td class="num">${money(q.total)}</td><td class="num"><b>${money(pct(q.total, PRICING.CREATOR))}</b></td></tr>`).join('')}</tbody>
+      </table></div>` : empty('clock', 'Bekleyen rezervasyon yok', 'Linkinle gelen misafir talep bıraktığında, otel onayına kadar burada görünür.')}`;
+  }
+
+  /* ---------- Elçi: Medya Kiti ---------- */
+  const media = { bizId: null };
+  function viewCreatorMedia() {
+    const apps = myApproved();
+    const hotels = [...new Map(apps.map((a) => { const { b } = hotelOf(a); return [b?.id, { b, a }]; }).filter(([k]) => k)).values()];
+    if (!hotels.length) {
+      return `<div class="page-head"><div><h1>Medya Kiti</h1><p>Çalıştığın otellerin dikey (Story/Reels) görselleri.</p></div></div>
+        ${empty('video', 'Henüz medya kiti yok', 'Bir otelle iş birliğin onaylandığında otelin dikey görselleri burada açılır.', '<a class="btn btn-primary" href="#/c/offers">Otelleri gör</a>')}`;
+    }
+    if (!hotels.some((h) => h.b.id === media.bizId)) media.bizId = hotels[0].b.id;
+    const { b, a } = hotels.find((h) => h.b.id === media.bizId);
+    const opts = { hotel: b.name, region: b.region, code: a.code };
+    return `
+      <div class="page-head"><div><h1>Medya Kiti</h1><p>${esc(b.name)} için dikey formatta (1080×1920) Story ve Reels görselleri. İndir, linkinle paylaş.</p></div></div>
+      ${hotels.length > 1 ? `<div class="pills">${hotels.map((h) => `<button class="pill ${h.b.id === b.id ? 'active' : ''}" data-action="media-hotel" data-id="${h.b.id}">${esc(h.b.name)}</button>`).join('')}</div>` : ''}
+      <div class="info-box">${ic('info')}<span>Görseller Turizmlink şablonlarıyla hazırlanır; kodlu kartta ref kodun (<b>${esc(a.code)}</b>) yazılıdır. Otel kendi fotoğraf ve videolarını yükledikçe bu alan güncellenir.</span></div>
+      <div class="media-grid">
+        ${TLMedia.SCENES.map((sc) => `
+          <figure class="media-card">
+            <div class="media-thumb"><img src="${TLMedia.dataUrl(TLMedia.svg(sc, opts))}" alt="${esc(sc.title)} — ${esc(b.name)}" loading="lazy" /><span class="media-badge">${ic(sc.promo ? 'sparkles' : 'video')} ${sc.format}</span></div>
+            <figcaption><div><b>${esc(sc.title)}</b><small>9:16 · 1080×1920</small></div>
+              <button class="btn btn-ghost btn-sm" data-action="media-dl" data-scene="${sc.id}">${ic('download')} İndir</button></figcaption>
+          </figure>`).join('')}
+      </div>`;
+  }
+
   /* ---------- Üretici: Teklifler ---------- */
   function viewCreatorOffers() {
     const me = DB.creator(CURRENT.creator);
     return `
       <div class="page-head">
-        <div><h1>Merhaba ${esc(me.name.split(' ')[0])}</h1><p>Bölgendeki işletmelerin açık iş birliği teklifleri.</p></div>
+        <div><h1>Oteller</h1><p>Butik otellerin açık elçi teklifleri. Başvur, onaylanınca kendi linkini oluştur.</p></div>
       </div>
       ${modelFilterBar()}
       <div class="pills" role="group" aria-label="Bölge">
@@ -271,7 +369,7 @@
         </div>`;
     }).join('');
     return `
-      <div class="page-head"><div><h1>Linklerim</h1><p>Onaylanan otellerde kişisel linkini paylaş; linkinle gelen misafir %${PRICING.GUEST} indirim alır, sen %${PRICING.CREATOR} kazanırsın.</p></div></div>
+      <div class="page-head"><div><h1>Başvurularım</h1><p>Onaylanan otellerde kişisel linkini paylaş; linkinle gelen misafir %${PRICING.GUEST} indirim alır, sen %${PRICING.CREATOR} kazanırsın.</p></div></div>
       ${apps.length ? `<div class="list">${rows}</div>` : empty('inbox', 'Henüz başvurun yok', 'Teklifleri keşfedip ilk başvurunu yap.', '<a class="btn btn-primary" href="#/c/offers">Teklifleri gör</a>')}`;
   }
 
@@ -300,45 +398,43 @@
       </table></div>` : empty('wallet', 'Henüz onaylı iş birliği yok', 'Başvurun onaylandığında kazançların burada görünür.')}`;
   }
 
-  /* ---------- İşletme: Panel ---------- */
+  /* ---------- Otel: Dashboard ---------- */
+  function payoutRows(bizId) {
+    return DB.applications({ businessId: bizId, status: 'approved' }).map((a) => {
+      const o = DB.offer(a.offerId);
+      const comm = DB.hasCommission(o) ? a.revenue : 0;
+      return { a, c: DB.creator(a.creatorId), revenue: comm, creator: pct(comm, PRICING.CREATOR), platform: pct(comm, PRICING.PLATFORM), net: comm - pct(comm, PRICING.CREATOR) - pct(comm, PRICING.PLATFORM), fee: DB.split(a).fee };
+    });
+  }
+  function payoutTotals(rows) {
+    return rows.reduce((t, x) => { t.revenue += x.revenue; t.creator += x.creator; t.platform += x.platform; t.net += x.net; t.fee += x.fee; t.sales += x.a.sales; t.clicks += x.a.clicks; return t; },
+      { revenue: 0, creator: 0, platform: 0, net: 0, fee: 0, sales: 0, clicks: 0 });
+  }
+
   function viewBusinessDashboard() {
     const biz = DB.business(CURRENT.business);
-    const offers = DB.offers({ businessId: biz.id });
-    const apps = DB.applications({ businessId: biz.id });
-    const approved = apps.filter((a) => a.status === 'approved');
-    const pending = apps.filter((a) => a.status === 'pending');
+    const t = payoutTotals(payoutRows(biz.id));
     const reqs = DB.requests({ businessId: biz.id, status: 'pending' });
-    const sum = approved.reduce((acc, a) => {
-      const s = DB.split(a);
-      acc.revenue += a.revenue; acc.clicks += a.clicks; acc.sales += a.sales;
-      acc.pool += s.pool; acc.creator += s.creator; acc.platform += s.platform;
-      if (s.fee) { acc.fees += s.fee; acc.barter++; }
-      return acc;
-    }, { revenue: 0, clicks: 0, sales: 0, pool: 0, creator: 0, platform: 0, fees: 0, barter: 0 });
+    const pending = DB.applications({ businessId: biz.id, status: 'pending' });
+    const NET = 100 - PRICING.TOTAL;
     return `
       <div class="page-head">
-        <div><h1>${esc(biz.name)}</h1><p class="flex" style="gap:6px">${ic('pin')} ${esc(biz.region)} · Affiliate performansınız</p></div>
-        <a class="btn btn-primary" href="#/b/new">${ic('plus')} Yeni teklif</a>
+        <div><h1>${esc(biz.name)}</h1><p class="flex" style="gap:6px">${ic('pin')} ${esc(biz.region)} · Turizmlink satış özeti</p></div>
+        <a class="btn btn-ghost" href="hotel.html?h=${biz.id}" target="_blank" rel="noopener">${ic('external')} Rezervasyon sayfanız</a>
       </div>
       <div class="grid grid-stats">
-        ${stat({ label: 'Affiliate ciro', value: money(sum.revenue), sub: `${sum.sales} rezervasyon`, icon: 'trending', highlight: true })}
-        ${stat({ label: `Toplam komisyon (%${PRICING.TOTAL})`, value: money(sum.pool), sub: `${money(sum.creator)} üretici · ${money(sum.platform)} Turizmlink`, icon: 'percent' })}
-        ${stat({ label: 'Barter hizmet bedeli', value: money(sum.fees), sub: `${sum.barter} eşleşme × ${money(PRICING.BARTER_FEE)}`, icon: 'bed' })}
-        ${stat({ label: 'Tıklama', value: num.format(sum.clicks), sub: sum.clicks ? `Dönüşüm %${((sum.sales / sum.clicks) * 100).toFixed(1)}` : '', icon: 'pointer' })}
-        ${stat({ label: 'Aktif teklif', value: offers.filter((o) => o.active).length, sub: `${approved.length} aktif üretici`, icon: 'tag' })}
+        ${stat({ label: 'Toplam ciro', value: money(t.revenue), sub: `${t.sales} onaylı rezervasyon`, icon: 'trending', highlight: true })}
+        ${stat({ label: 'Bekleyen talepler', value: reqs.length, sub: '2 saat içinde yanıtlayın', icon: 'clock' })}
+        ${stat({ label: `Komisyon (%${PRICING.CREATOR} + %${PRICING.PLATFORM})`, value: money(t.creator + t.platform), sub: `${money(t.creator)} elçi · ${money(t.platform)} Turizmlink`, icon: 'percent' })}
+        ${stat({ label: `Otele net aktarılacak (%${NET})`, value: money(t.net), sub: 'Hakediş raporunda detay', icon: 'wallet' })}
+        ${stat({ label: 'Tıklama', value: num.format(t.clicks), sub: t.clicks ? `Dönüşüm %${((t.sales / t.clicks) * 100).toFixed(1)}` : '', icon: 'pointer' })}
       </div>
 
-      <h2 class="section-title">Onay bekleyen ön talepler ${reqs.length ? `(${reqs.length})` : ''}</h2>
-      ${reqs.length ? `<div class="list">${reqs.slice(0, 3).map(requestRow).join('')}</div>${reqs.length > 3 ? '<p><a href="#/b/requests">Tümünü gör →</a></p>' : ''}` : empty('calendar', 'Bekleyen ön talep yok', 'Misafir talepleri geldiğinde burada görünecek.')}
+      <div class="sec-row"><h2 class="section-title">Gelen rezervasyon talepleri ${reqs.length ? `(${reqs.length})` : ''}</h2>${reqs.length ? '<a class="link-arrow" href="#/b/requests">Tümü ' + ic('arrow') + '</a>' : ''}</div>
+      ${reqs.length ? requestTable(reqs.slice(0, 4)) : empty('inbox', 'Bekleyen talep yok', 'Misafir talepleri geldiğinde burada görünecek.')}
 
-      <h2 class="section-title">Onay bekleyen başvurular ${pending.length ? `(${pending.length})` : ''}</h2>
-      ${pending.length ? `<div class="list">${pending.slice(0, 3).map(appRow).join('')}</div>${pending.length > 3 ? '<p><a href="#/b/apps">Tümünü gör →</a></p>' : ''}` : empty('check', 'Bekleyen başvuru yok', 'Yeni başvurular geldiğinde burada görünecek.')}
-
-      <h2 class="section-title">En iyi performans gösteren üreticiler</h2>
-      ${approved.length ? `<div class="card table-wrap"><table>
-        <thead><tr><th>Üretici</th><th>Teklif</th><th>Kod</th><th class="num">Tıklama</th><th class="num">Satış</th><th class="num">Ciro</th><th class="num">Toplam (%${PRICING.TOTAL})</th></tr></thead>
-        <tbody>${[...approved].sort((a, b) => b.revenue - a.revenue).map((a) => { const c = DB.creator(a.creatorId); const o = DB.offer(a.offerId); return `<tr><td><b>${esc(c.name)}</b> <span class="muted">${esc(c.handle)}</span></td><td>${esc(o.title)}</td><td><code>${esc(a.code)}</code></td><td class="num">${num.format(a.clicks)}</td><td class="num">${a.sales}</td><td class="num"><b>${money(a.revenue)}</b></td><td class="num">${money(DB.split(a).pool)}</td></tr>`; }).join('')}</tbody>
-      </table></div>` : empty('chart', 'Henüz veri yok', 'Bir başvuruyu onayladığınızda performans burada görünür.')}`;
+      <div class="sec-row"><h2 class="section-title">Onay bekleyen elçi başvuruları ${pending.length ? `(${pending.length})` : ''}</h2></div>
+      ${pending.length ? `<div class="list">${pending.slice(0, 3).map(appRow).join('')}</div>` : empty('users', 'Bekleyen başvuru yok', 'Yeni elçi başvuruları burada görünecek.')}`;
   }
 
   function appRow(a) {
@@ -363,32 +459,25 @@
       </div>`;
   }
 
-  /* ---------- İşletme: Ön talepler (misafir → otel onayı) ---------- */
+  /* ---------- Otel: Gelen Rezervasyon Talepleri ---------- */
   const fmtDay = (iso) => new Date(`${iso}T00:00:00`).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
-  function requestRow(q) {
-    const b = DB.business(q.businessId);
-    const room = b?.rooms?.find((r) => r.id === q.roomId);
-    const a = q.code ? DB.byCode(q.code) : null;
-    const c = a ? DB.creator(a.creatorId) : null;
-    return `
-      <div class="card row">
-        <div class="row-icon cat-otel">${ic('calendar')}</div>
-        <div>
-          <div class="row-title">${esc(q.guestName)} <span class="muted" style="font-weight:500">${esc(q.phone || '')}</span></div>
-          <div class="row-sub">${fmtDay(q.checkIn)} → ${fmtDay(q.checkOut)} · ${q.nights} gece · ${q.guests} kişi · ${esc(room?.name || '')} · ${ago(q.createdAt)}</div>
-          <div class="mini-stats" style="margin-top:8px">
-            <span>Liste <b>${money(q.list)}</b></span>
-            ${q.discount ? `<span>Davet indirimi (%${PRICING.GUEST}) <b>− ${money(q.discount)}</b></span>` : ''}
-            <span>Misafir öder <b>${money(q.total)}</b></span>
-            ${c ? `<span>${ic('link')} ${esc(c.name)} · <code>${esc(q.code)}</code></span><span>Komisyon (%${PRICING.TOTAL}) <b>${money(pct(q.total, PRICING.TOTAL))}</b></span>` : '<span>Doğrudan talep · komisyon yok</span>'}
-          </div>
-        </div>
-        <div class="row-actions">
-          ${q.status === 'pending'
-            ? `<button class="btn btn-danger btn-sm" data-action="decide-req" data-id="${q.id}" data-ok="0">${ic('x')} Reddet</button><button class="btn btn-success btn-sm" data-action="decide-req" data-id="${q.id}" data-ok="1">${ic('check')} Onayla</button>`
-            : statusChip(q.status)}
-        </div>
-      </div>`;
+  function requestTable(list) {
+    return `<div class="card table-wrap"><table class="req-table">
+      <thead><tr><th>Misafir Adı</th><th>Tarih</th><th class="num">Tutar</th><th>Ref Kodu</th><th class="act">İşlem</th></tr></thead>
+      <tbody>${list.map((q) => {
+        const room = DB.business(q.businessId)?.rooms?.find((r) => r.id === q.roomId);
+        const a = q.code ? DB.byCode(q.code) : null;
+        const c = a ? DB.creator(a.creatorId) : null;
+        return `<tr>
+          <td><b>${esc(q.guestName)}</b><small class="cell-sub">${esc(q.phone || '')} · ${q.guests} kişi</small></td>
+          <td>${fmtDay(q.checkIn)} → ${fmtDay(q.checkOut)}<small class="cell-sub">${q.nights} gece · ${esc(room?.name || '')}</small></td>
+          <td class="num"><b>${money(q.total)}</b>${q.discount ? `<small class="cell-sub"><s>${money(q.list)}</s> · %${PRICING.GUEST} ind.</small>` : ''}</td>
+          <td>${q.code ? `<code class="ref-code">${esc(q.code)}</code><small class="cell-sub">${esc(c?.name || '')}</small>` : '<span class="muted">Doğrudan</span>'}</td>
+          <td class="act">${q.status === 'pending'
+            ? `<div class="act-btns"><button class="btn btn-success btn-sm" data-action="decide-req" data-id="${q.id}" data-ok="1">${ic('check')} Onayla</button><button class="btn btn-reject btn-sm" data-action="decide-req" data-id="${q.id}" data-ok="0">${ic('x')} Reddet</button></div>`
+            : statusChip(q.status)}</td>
+        </tr>`;
+      }).join('')}</tbody></table></div>`;
   }
 
   let reqFilter = 'pending';
@@ -398,10 +487,87 @@
     const list = reqFilter === 'all' ? all : all.filter((q) => q.status === reqFilter);
     const tabs = [['pending', 'Bekleyen'], ['approved', 'Onaylı'], ['rejected', 'Reddedilen'], ['all', 'Tümü']];
     return `
-      <div class="page-head"><div><h1>Ön talepler</h1><p>Misafirler rezervasyon sayfanızdan tarih seçerek ön talep bırakır. Onayladığınızda satış, varsa elçinin koduna işlenir.</p></div>
-        <a class="btn btn-ghost" href="hotel.html" target="_blank" rel="noopener">${ic('external')} Rezervasyon sayfanız</a></div>
+      <div class="page-head"><div><h1>Gelen Rezervasyon Talepleri</h1><p>Misafire 2 saat içinde onay sözü verildi. Onayladığınızda karttan çekim yapılır ve satış varsa elçinin koduna işlenir.</p></div></div>
       <div class="pills">${tabs.map(([k, l]) => `<button class="pill ${reqFilter === k ? 'active' : ''}" data-action="req-filter" data-f="${k}">${l} (${k === 'all' ? all.length : count(k)})</button>`).join('')}</div>
-      ${list.length ? `<div class="list">${list.map(requestRow).join('')}</div>` : empty('calendar', 'Bu listede ön talep yok', 'Misafir talepleri geldiğinde burada görünecek.')}`;
+      ${list.length ? requestTable(list) : empty('inbox', 'Bu listede talep yok', 'Misafir talepleri geldiğinde burada görünecek.')}`;
+  }
+
+  /* ---------- Otel: Takvim / Fiyat ---------- */
+  const isoOf = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const calState = { month: (() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); })() };
+  function viewBusinessCalendar() {
+    const biz = DB.business(CURRENT.business);
+    const closed = new Set(biz.closed || []);
+    const booked = {};
+    DB.requests({ businessId: biz.id, status: 'approved' }).forEach((q) => {
+      for (let d = new Date(`${q.checkIn}T00:00:00`); isoOf(d) < q.checkOut; d.setDate(d.getDate() + 1)) booked[isoOf(d)] = (booked[isoOf(d)] || 0) + 1;
+    });
+    const pendingDays = new Set();
+    DB.requests({ businessId: biz.id, status: 'pending' }).forEach((q) => {
+      for (let d = new Date(`${q.checkIn}T00:00:00`); isoOf(d) < q.checkOut; d.setDate(d.getDate() + 1)) pendingDays.add(isoOf(d));
+    });
+    const m = calState.month;
+    const lead = (new Date(m.getFullYear(), m.getMonth(), 1).getDay() + 6) % 7;
+    const days = new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate();
+    const today = isoOf(new Date());
+    let cells = '';
+    for (let i = 0; i < lead; i++) cells += '<span class="cal-pad"></span>';
+    for (let d = 1; d <= days; d++) {
+      const s = isoOf(new Date(m.getFullYear(), m.getMonth(), d));
+      const past = s < today;
+      const cls = [past ? 'is-past' : '', closed.has(s) ? 'is-closed' : '', booked[s] ? 'is-booked' : '', pendingDays.has(s) ? 'is-pending' : '', s === today ? 'is-today' : ''].filter(Boolean).join(' ');
+      cells += `<button type="button" class="xcal-day ${cls}" data-action="cal-toggle" data-day="${s}" ${past ? 'disabled' : ''} aria-pressed="${closed.has(s)}" aria-label="${s}${closed.has(s) ? ' kapalı' : ''}">
+        <span>${d}</span>${booked[s] ? `<small>${booked[s]} rez.</small>` : closed.has(s) ? '<small>Kapalı</small>' : pendingDays.has(s) ? '<small>Talep</small>' : ''}</button>`;
+    }
+    const thisMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    return `
+      <div class="page-head"><div><h1>Takvim / Fiyat</h1><p>Satışa kapalı günleri işaretleyin ve oda fiyatlarını güncelleyin. Değişiklikler misafir rezervasyon sayfasına anında yansır.</p></div></div>
+      <div class="cal-layout">
+        <section class="card card-pad">
+          <div class="cal-head">
+            <button type="button" class="cal-nav" data-action="cal-nav" data-dir="-1" ${m > thisMonth ? '' : 'disabled'} aria-label="Önceki ay">${ic('arrow', 'flip')}</button>
+            <strong>${m.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' })}</strong>
+            <button type="button" class="cal-nav" data-action="cal-nav" data-dir="1" aria-label="Sonraki ay">${ic('arrow')}</button>
+          </div>
+          <div class="xcal-grid">${['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'].map((w) => `<span class="cal-wd">${w}</span>`).join('')}${cells}</div>
+          <div class="cal-legend"><span><i class="lg-open"></i>Satışa açık</span><span><i class="lg-closed"></i>Kapalı</span><span><i class="lg-booked"></i>Rezervasyon</span><span><i class="lg-pending"></i>Bekleyen talep</span></div>
+          <p class="hint muted" style="margin:10px 0 0;font-size:12.5px">Bir güne dokunarak satışa açın / kapatın.</p>
+        </section>
+        <form class="card card-pad" id="priceForm">
+          <h2 class="gh-h2">Oda fiyatları (gecelik)</h2>
+          <div class="price-list">
+            ${(biz.rooms || []).map((r) => `
+              <div class="price-row">
+                <div><b>${esc(r.name)}</b><small>${r.guests} kişiye kadar · elçi linkiyle ${money(DB.guestPrice(r.price, true).total)}</small></div>
+                <div class="price-input"><span>₺</span><input class="input" type="number" name="${r.id}" min="100" step="50" value="${r.price}" aria-label="${esc(r.name)} gecelik fiyat" /></div>
+              </div>`).join('')}
+          </div>
+          <div class="info-box">${ic('info')}<span>Elçi linkiyle gelen misafir bu fiyatlardan %${PRICING.GUEST} indirim görür.</span></div>
+          <button class="btn btn-primary btn-block" type="submit">${ic('check')} Fiyatları kaydet</button>
+        </form>
+      </div>`;
+  }
+
+  /* ---------- Otel: Hakediş Raporu ---------- */
+  function viewBusinessPayouts() {
+    const biz = DB.business(CURRENT.business);
+    const rows = payoutRows(biz.id).sort((x, y) => y.revenue - x.revenue);
+    const t = payoutTotals(rows);
+    const NET = 100 - PRICING.TOTAL;
+    return `
+      <div class="page-head"><div><h1>Hakediş Raporu</h1><p>Onaylı rezervasyonların cirosu ve kesintiler. Ciro, misafirin ödediği (indirimli) tutardır.</p></div></div>
+      <div class="payout-sum">
+        <div><span>Toplam Ciro</span><strong>${money(t.revenue)}</strong></div>
+        <div><span>Misafir/Elçi Komisyonu (%${PRICING.CREATOR})</span><strong class="neg">− ${money(t.creator)}</strong></div>
+        <div><span>Turizmlink Hizmet Bedeli (%${PRICING.PLATFORM})</span><strong class="neg">− ${money(t.platform)}</strong></div>
+        <div class="net"><span>Otele Net Aktarılacak Tutar (%${NET})</span><strong>${money(t.net)}</strong></div>
+      </div>
+      ${rows.length ? `<div class="card table-wrap"><table class="payout-table">
+        <thead><tr><th>Elçi</th><th>Ref Kodu</th><th class="num">Rez.</th><th class="num">Toplam Ciro</th><th class="num">Misafir/Elçi Kom. (%${PRICING.CREATOR})</th><th class="num">Turizmlink (%${PRICING.PLATFORM})</th><th class="num">Otele Net (%${NET})</th></tr></thead>
+        <tbody>${rows.map((x) => `<tr><td><b>${esc(x.c.name)}</b><small class="cell-sub">${esc(x.c.handle)}</small></td><td><code class="ref-code">${esc(x.a.code)}</code></td><td class="num">${x.a.sales}</td><td class="num">${money(x.revenue)}</td><td class="num neg">− ${money(x.creator)}</td><td class="num neg">− ${money(x.platform)}</td><td class="num"><b>${money(x.net)}</b></td></tr>`).join('')}</tbody>
+        <tfoot><tr><td colspan="2">Toplam</td><td class="num">${t.sales}</td><td class="num">${money(t.revenue)}</td><td class="num neg">− ${money(t.creator)}</td><td class="num neg">− ${money(t.platform)}</td><td class="num"><b>${money(t.net)}</b></td></tr></tfoot>
+      </table></div>` : empty('chart', 'Henüz hakediş yok', 'Onaylanan ilk rezervasyondan sonra rapor burada oluşur.')}
+      ${t.fee ? `<div class="info-box info-gold" style="margin-top:14px">${ic('bed')}<span>Barter eşleşmeleri için ayrıca <b>${money(t.fee)}</b> sabit hizmet bedeli faturalanır (komisyona dahil değildir).</span></div>` : ''}`;
   }
 
   /* ---------- İşletme: Başvurular ---------- */
@@ -489,6 +655,10 @@
 
   /* ================= ROUTER ================= */
   const ROUTES = {
+    '/c/dashboard': viewCreatorDashboard,
+    '/c/media': viewCreatorMedia,
+    '/b/calendar': viewBusinessCalendar,
+    '/b/payouts': viewBusinessPayouts,
     '/c/offers': viewCreatorOffers,
     '/c/apps': viewCreatorApps,
     '/c/earnings': viewCreatorEarnings,
@@ -564,6 +734,39 @@
         rerender();
         break;
       }
+      case 'lb-copy': {
+        const input = document.getElementById('lb-code');
+        const res = DB.setCode(lb.appId, input.value);
+        if (res.error) { toast(res.error); input.focus(); break; }
+        input.value = res.code;
+        updateLbPreview();
+        copy(DB.affiliateUrl(res.code));
+        break;
+      }
+      case 'media-hotel':
+        media.bizId = id;
+        rerender();
+        break;
+      case 'media-dl': {
+        const a = myApproved().find((x) => hotelOf(x).b?.id === media.bizId);
+        const b = DB.business(media.bizId);
+        const sc = TLMedia.SCENES.find((x) => x.id === el.dataset.scene);
+        if (!a || !b || !sc) break;
+        el.disabled = true;
+        TLMedia.download(sc, { hotel: b.name, region: b.region, code: a.code }, `turizmlink-${b.id}-${sc.id}`)
+          .then((fmt) => { toast(`Görsel indirildi (${fmt.toUpperCase()})`); el.disabled = false; });
+        break;
+      }
+      case 'cal-toggle': {
+        const closed = DB.toggleClosed(CURRENT.business, el.dataset.day);
+        toast(closed ? 'Gün satışa kapatıldı' : 'Gün satışa açıldı');
+        rerender();
+        break;
+      }
+      case 'cal-nav':
+        calState.month = new Date(calState.month.getFullYear(), calState.month.getMonth() + +el.dataset.dir, 1);
+        rerender();
+        break;
       case 'req-filter':
         reqFilter = el.dataset.f;
         rerender();
@@ -591,6 +794,7 @@
 
   document.addEventListener('input', (e) => {
     const t = e.target;
+    if (t.id === 'lb-code') { updateLbPreview(); return; }
     if (t.id === 'offerSearch') {
       offerFilter.q = t.value;
       refreshOfferGrid();
@@ -601,6 +805,11 @@
   });
 
   document.addEventListener('change', (e) => {
+    if (e.target.id === 'lb-app') {
+      lb.appId = e.target.value;
+      document.getElementById('lbWrap').innerHTML = linkBuilderHtml();
+      return;
+    }
     if (e.target.id === 'catFilter') {
       offerFilter.category = e.target.value;
       refreshOfferGrid();
@@ -610,6 +819,14 @@
   document.addEventListener('submit', (e) => {
     e.preventDefault();
     const f = e.target;
+
+    if (f.id === 'priceForm') {
+      let n = 0;
+      new FormData(f).forEach((v, k) => { if (DB.setRoomPrice(CURRENT.business, k, +v)) n++; });
+      toast(n ? 'Fiyatlar kaydedildi' : 'Geçerli bir fiyat girin');
+      rerender();
+      return;
+    }
 
     if (f.id === 'applyForm') {
       const msg = f.querySelector('#applyMsg').value.trim();
@@ -640,6 +857,16 @@
     }
 
   });
+
+  // Link oluşturucu: yazarken önizleme (kayıt "Linkimi Kopyala" ile yapılır)
+  function updateLbPreview() {
+    const input = document.getElementById('lb-code');
+    if (!input) return;
+    const code = input.value.trim().toLocaleUpperCase('tr-TR').replace(/\s+/g, '-') || '…';
+    const url = DB.affiliateUrl(code);
+    document.getElementById('lb-url').textContent = url;
+    document.getElementById('lb-test').href = url;
+  }
 
   window.addEventListener('hashchange', () => { closeModal(); render(); });
   window.addEventListener('storage', (e) => { if (e.key && e.key.startsWith('turizmlink:v')) rerender(); }); // başka sekmede satış olunca güncelle

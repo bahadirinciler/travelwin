@@ -237,7 +237,8 @@
       if (approve) a.code = makeCode(DB.creator(a.creatorId), DB.offer(a.offerId));
       save(state); return a;
     },
-    byCode(code) { return state.applications.find((a) => a.code === code && a.status === 'approved'); },
+    // Eski kodlar (aliases) da geçerli kalır: elçi kodunu değiştirse bile paylaşılmış linkler kırılmaz.
+    byCode(code) { return state.applications.find((a) => a.status === 'approved' && (a.code === code || (a.aliases || []).includes(code))); },
     trackClick(code) {
       const a = DB.byCode(code); if (a) { a.clicks++; save(state); } return a;
     },
@@ -267,6 +268,41 @@
       if (approve && q.code) DB.trackSale(q.code, q.total);
       return q;
     },
+    /** Elçinin kodlarıyla gelen, otel onayı bekleyen ön talepler. */
+    pendingRequestsFor(creatorId) {
+      const codes = new Set(DB.applications({ creatorId, status: 'approved' }).flatMap((x) => [x.code, ...(x.aliases || [])]));
+      return DB.requests({ status: 'pending' }).filter((q) => q.code && codes.has(q.code));
+    },
+
+    /** Elçi kendi ref kodunu belirler. Hata varsa { error } döner. */
+    setCode(appId, raw) {
+      const a = state.applications.find((x) => x.id === appId && x.status === 'approved');
+      if (!a) return { error: 'Onaylı iş birliği bulunamadı.' };
+      const code = String(raw || '').trim().toLocaleUpperCase('tr-TR')
+        .replace(/Ç/g, 'C').replace(/Ğ/g, 'G').replace(/İ/g, 'I').replace(/Ö/g, 'O').replace(/Ş/g, 'S').replace(/Ü/g, 'U')
+        .replace(/\s+/g, '-');
+      if (!/^[A-Z0-9-]{4,20}$/.test(code)) return { error: 'Kod 4–20 karakter olmalı; harf, rakam ve tire kullanılabilir.' };
+      if (code === a.code) return { code };
+      if (state.applications.some((x) => x !== a && (x.code === code || (x.aliases || []).includes(code)))) return { error: 'Bu kod başka bir elçide kullanılıyor.' };
+      a.aliases = [...new Set([...(a.aliases || []), a.code])].filter((c) => c !== code);
+      a.code = code; save(state);
+      return { code };
+    },
+
+    /* ---- Otel: takvim & fiyat ---- */
+    toggleClosed(businessId, day) {
+      const b = DB.business(businessId); if (!b) return false;
+      b.closed = b.closed || [];
+      const i = b.closed.indexOf(day);
+      if (i >= 0) b.closed.splice(i, 1); else b.closed.push(day);
+      save(state); return i < 0;
+    },
+    setRoomPrice(businessId, roomId, price) {
+      const r = DB.business(businessId)?.rooms?.find((x) => x.id === roomId);
+      if (!r || !(price > 0)) return null;
+      r.price = Math.round(price); save(state); return r;
+    },
+
     /** Misafir fiyatı: liste − %5 davet indirimi (yalnızca geçerli elçi koduyla). */
     guestPrice(list, hasRef) {
       const discount = hasRef ? pct(list, PRICING.GUEST) : 0;

@@ -3,15 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0f2342" />
+  <meta name="theme-color" content="#0f172a" />
   <title>Casa Di Datça — Rezervasyon · Turizmlink</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body class="guest">
-  <!-- %5 Davet İndirimi bandı (elçi linkiyle gelindiyse) -->
+  <!-- Tebrik bandı: ?ref= ile gelindiyse elçi adı + %5 Misafir İndirimi -->
   <div class="disc-band" id="discBand" hidden></div>
 
   <header class="gnav">
@@ -22,6 +23,11 @@
   </header>
 
   <main class="lwrap ghotel" id="hotel"></main>
+
+  <div class="modal" id="modal" hidden>
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle" id="modalCard"></div>
+  </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 

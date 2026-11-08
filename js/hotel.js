@@ -7,6 +7,8 @@
   const $root = document.getElementById('hotel');
   const $band = document.getElementById('discBand');
   const $toast = document.getElementById('toast');
+  const $modal = document.getElementById('modal');
+  const $modalCard = document.getElementById('modalCard');
 
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const tl = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 });
@@ -15,6 +17,23 @@
   function toast(msg) {
     $toast.textContent = msg; $toast.classList.add('show');
     clearTimeout(toastTimer); toastTimer = setTimeout(() => $toast.classList.remove('show'), 2600);
+  }
+
+  /* ---------- Türkçe ek yardımcıları (ünlü uyumu) ---------- */
+  const lastVowel = (w) => (w.toLocaleLowerCase('tr-TR').match(/[aıoueiöü](?=[^aıoueiöü]*$)/) || ['e'])[0];
+  const endsVowel = (w) => /[aıoueiöü]$/i.test(w.toLocaleLowerCase('tr-TR'));
+  /** "Ayşe Gezgin" → "Ayşe Gezgin'in", "Mert Rota" → "Mert Rota'nın" */
+  function genitive(name) {
+    const w = name.trim().split(/\s+/).pop();
+    const v = { a: 'ı', ı: 'ı', o: 'u', u: 'u', e: 'i', i: 'i', ö: 'ü', ü: 'ü' }[lastVowel(w)];
+    return `${name}'${endsVowel(w) ? 'n' : ''}${v}n`;
+  }
+  /** "Casa Di Datça" → "Casa Di Datça'dasınız" */
+  function locativeYou(name) {
+    const w = name.trim().split(/\s+/).pop();
+    const back = 'aıou'.includes(lastVowel(w));
+    const hard = /[çfhkpsşt]$/i.test(w.toLocaleLowerCase('tr-TR'));
+    return `${name}'${hard ? 't' : 'd'}${back ? 'asınız' : 'esiniz'}`;
   }
 
   /* ---------- Tarih yardımcıları (yerel gün, ISO yyyy-mm-dd) ---------- */
@@ -48,7 +67,7 @@
 
   /* ---------- Davet indirimi bandı ---------- */
   if (hasRef) {
-    $band.innerHTML = `<div class="lwrap disc-in">${ic('gift')}<span><b>%${PRICING.GUEST} Davet İndirimi</b> uygulandı · ${esc(creator.name)} (${esc(creator.handle)}) önerisiyle geldiniz</span><code>${esc(code)}</code></div>`;
+    $band.innerHTML = `<div class="lwrap disc-in"><span class="disc-spark" aria-hidden="true">✨</span><span>${esc(genitive(creator.name))} tavsiyesiyle ${esc(locativeYou(biz.name))}. Rezervasyonunuza özel <b>%${PRICING.GUEST} Misafir İndirimi</b> tanımlandı.</span><code>${esc(code)}</code></div>`;
     $band.hidden = false;
   } else if (code) {
     $band.innerHTML = `<div class="lwrap disc-in">${ic('info')}<span>Bu davet linki geçersiz veya süresi dolmuş. Liste fiyatıyla ön talep bırakabilirsiniz.</span></div>`;
@@ -127,8 +146,8 @@
       <div class="sum-dates"><div><span>Giriş</span><b>${fmtLong(st.checkIn)}</b></div><div><span>Çıkış</span><b>${fmtLong(st.checkOut)}</b></div></div>
       <div class="sum-rows">
         <div><span>${money(r.price)} × ${q.nights} gece</span><b>${money(q.list)}</b></div>
-        ${hasRef ? `<div class="sum-disc"><span>${ic('gift')} Davet indirimi (%${PRICING.GUEST})</span><b>− ${money(q.discount)}</b></div>` : ''}
-        <div class="sum-total"><span>Toplam</span><b>${money(q.total)}</b></div>
+        ${hasRef ? `<div class="sum-disc"><span>${ic('gift')} Misafir indirimi (%${PRICING.GUEST})</span><b>− ${money(q.discount)}</b></div>` : ''}
+        <div class="sum-total"><span>${hasRef ? 'Net fiyat' : 'Toplam'}</span><span class="price-pair">${hasRef ? `<s>${money(q.list)}</s>` : ''}<b>${money(q.total)}</b></span></div>
       </div>`;
   }
 
@@ -171,7 +190,7 @@
 
         <aside class="gh-side">
           <form class="card card-pad gh-book" id="reqForm" novalidate>
-            <div class="gh-book-head"><h2 class="gh-h2">Ön talep oluştur</h2>${hasRef ? `<span class="chip chip-gold">${ic('gift')} %${PRICING.GUEST} indirim</span>` : ''}</div>
+            <div class="gh-book-head"><h2 class="gh-h2">Rezervasyon talebi</h2>${hasRef ? `<span class="chip chip-gold">${ic('gift')} %${PRICING.GUEST} misafir indirimi</span>` : ''}</div>
             <div class="gh-room-sel">${ic('bed')} ${esc(r.name)}</div>
             <div id="sumWrap">${summaryHtml()}</div>
             <div class="form-grid">
@@ -179,8 +198,8 @@
               <div class="field"><label for="g-phone">Telefon</label><input class="input" id="g-phone" name="phone" type="tel" autocomplete="tel" required placeholder="05xx xxx xx xx" /></div>
               <div class="field full"><label for="g-name">Ad soyad</label><input class="input" id="g-name" name="guestName" autocomplete="name" required placeholder="Adınız ve soyadınız" /></div>
             </div>
-            <button class="btn btn-accent btn-block" type="submit">${ic('send')} Ön talep gönder</button>
-            <p class="gh-note">${ic('shield')} Ödeme alınmaz. Otel müsaitliği onayladığında sizinle iletişime geçer; rezervasyon onayla kesinleşir.</p>
+            <button class="btn btn-accent btn-block btn-book" type="submit">${ic('calendar')} Rezervasyon talebi gönder</button>
+            <p class="gh-note">${ic('shield')} Şimdi ödeme alınmaz. Kartınızdan çekim, otel talebinizi onayladıktan sonra yapılır.</p>
           </form>
         </aside>
       </div>`;
@@ -235,6 +254,77 @@
     }
   });
 
+  /* ---------- Onay penceresi (modal) ---------- */
+  let pending = null; // { name, phone, guests, quote }
+  function openModal(html) {
+    $modalCard.innerHTML = html;
+    $modal.hidden = false;
+    document.body.style.overflow = 'hidden';
+    $modalCard.querySelector('input, button:not(.modal-close)')?.focus({ preventScroll: true });
+  }
+  function closeModal() { $modal.hidden = true; document.body.style.overflow = ''; }
+  $modal.addEventListener('click', (e) => { if (e.target.closest('[data-close]')) closeModal(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$modal.hidden) closeModal(); });
+
+  function confirmHtml() {
+    const { name, guests, quote: q } = pending;
+    return `
+      <div class="modal-head">
+        <div><span class="eyebrow">${ic('shield')} Güvenli talep</span><h2 id="modalTitle" style="font-size:22px;margin-top:10px">Rezervasyon talebinizi onaylayın</h2></div>
+        <button class="modal-close" data-close aria-label="Kapat">${ic('x')}</button>
+      </div>
+      <form class="modal-body" id="confirmForm" novalidate>
+        <div class="cf-sum">
+          <div class="cf-sum-top"><b>${esc(biz.name)}</b><span>${esc(room().name)}</span></div>
+          <div class="cf-sum-grid">
+            <div><span>Giriş</span><b>${fmtLong(st.checkIn)}</b></div>
+            <div><span>Çıkış</span><b>${fmtLong(st.checkOut)}</b></div>
+            <div><span>Misafir</span><b>${esc(name)} · ${guests} kişi</b></div>
+            <div><span>${q.nights} gece</span><b class="price-pair">${q.discount ? `<s>${money(q.list)}</s>` : ''}${money(q.total)}</b></div>
+          </div>
+          ${q.discount ? `<div class="cf-disc">${ic('gift')} %${PRICING.GUEST} misafir indirimi: ${money(q.discount)} tasarruf</div>` : ''}
+        </div>
+
+        <div class="cf-policy">${ic('clock')}<p><b>Otelimiz talebinizi 2 saat içinde onaylayacaktır,</b> onay sonrası kartınızdan çekim yapılacaktır. Onay gelmezse hiçbir ücret alınmaz.</p></div>
+
+        <fieldset class="cf-card">
+          <legend>${ic('lock')} Kart bilgileri</legend>
+          <div class="form-grid">
+            <div class="field full"><label for="cc-name">Kart üzerindeki isim</label><input class="input" id="cc-name" autocomplete="cc-name" value="${esc(name)}" required /></div>
+            <div class="field full"><label for="cc-num">Kart numarası</label><input class="input" id="cc-num" inputmode="numeric" autocomplete="cc-number" placeholder="0000 0000 0000 0000" maxlength="19" required /></div>
+            <div class="field"><label for="cc-exp">Son kullanma</label><input class="input" id="cc-exp" inputmode="numeric" autocomplete="cc-exp" placeholder="AA/YY" maxlength="5" required /></div>
+            <div class="field"><label for="cc-cvc">CVC</label><input class="input" id="cc-cvc" inputmode="numeric" autocomplete="cc-csc" placeholder="123" maxlength="4" required /></div>
+          </div>
+          <p class="cf-demo">${ic('info')} Demo sürüm: kart bilgisi hiçbir yere gönderilmez ve kaydedilmez. Lütfen gerçek kart bilgisi girmeyin.</p>
+        </fieldset>
+
+        <label class="cf-check"><input type="checkbox" id="cf-ok" required /> <span>Rezervasyon koşullarını ve iptal politikasını okudum, kabul ediyorum.</span></label>
+        <div class="cf-actions">
+          <button type="button" class="btn btn-ghost" data-close>Vazgeç</button>
+          <button type="submit" class="btn btn-accent">${ic('check')} Talebi onayla</button>
+        </div>
+      </form>`;
+  }
+
+  function doneHtml(req) {
+    return `
+      <div class="modal-body done-body">
+        <button class="modal-close done-close" data-close aria-label="Kapat">${ic('x')}</button>
+        <div class="done-ico">${ic('check')}</div>
+        <h2 id="modalTitle">Talebiniz otele iletildi</h2>
+        <p>${esc(biz.name)} · ${esc(room().name)}<br>${fmtLong(req.checkIn)} → ${fmtLong(req.checkOut)} · ${req.nights} gece</p>
+        <div class="gh-done-total">${money(req.total)}${req.discount ? `<small>${money(req.discount)} misafir indirimi dahil</small>` : ''}</div>
+        <div class="cf-policy">${ic('clock')}<p>Otelimiz talebinizi <b>2 saat içinde</b> onaylayacak; onay sonrası kartınızdan çekim yapılacak ve <b>${esc(req.phone)}</b> numarasına bilgi verilecek.</p></div>
+
+        <div class="ambassador">
+          <div class="amb-ico">${ic('sparkles')}</div>
+          <h3>Siz de paylaşıp her rezervasyondan %${PRICING.CREATOR} kazanmak ister misiniz?</h3>
+          <p>Konakladığınız oteli önerin; linkinizle gelen misafir %${PRICING.GUEST} indirim alsın, siz her onaylı rezervasyondan %${PRICING.CREATOR} net kazanın.</p>
+          <a class="btn btn-accent btn-block" href="app.html">${ic('camera')} Turizmlink Elçisi Olun ${ic('arrow')}</a>
+        </div>
+      </div>`;
+  }
+
   $root.addEventListener('submit', (e) => {
     e.preventDefault();
     const f = e.target;
@@ -243,20 +333,51 @@
     const name = f.guestName.value.trim();
     const phone = f.phone.value.trim();
     if (!name || !phone) { toast('Ad soyad ve telefon gerekli.'); (name ? f.phone : f.guestName).focus(); return; }
+    pending = { name, phone, guests: +f.guests.value, quote: q };
+    openModal(confirmHtml());
+  });
+
+  // Kart alanları: basit biçimlendirme
+  $modalCard.addEventListener('input', (e) => {
+    const t = e.target;
+    if (t.id === 'cc-num') t.value = t.value.replace(/\D/g, '').slice(0, 16).replace(/(\d{4})(?=\d)/g, '$1 ');
+    if (t.id === 'cc-exp') { const d = t.value.replace(/\D/g, '').slice(0, 4); t.value = d.length > 2 ? `${d.slice(0, 2)}/${d.slice(2)}` : d; }
+    if (t.id === 'cc-cvc') t.value = t.value.replace(/\D/g, '').slice(0, 4);
+  });
+
+  $modalCard.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const f = e.target;
+    if (f.id !== 'confirmForm' || !pending) return;
+    const num = f.querySelector('#cc-num').value.replace(/\D/g, '');
+    const exp = f.querySelector('#cc-exp').value;
+    const cvc = f.querySelector('#cc-cvc').value;
+    const err =
+      !f.querySelector('#cc-name').value.trim() ? ['cc-name', 'Kart üzerindeki ismi girin.'] :
+      num.length < 15 ? ['cc-num', 'Kart numarasını kontrol edin.'] :
+      !/^(0[1-9]|1[0-2])\/\d{2}$/.test(exp) ? ['cc-exp', 'Son kullanma tarihini AA/YY biçiminde girin.'] :
+      cvc.length < 3 ? ['cc-cvc', 'CVC kodunu girin.'] :
+      !f.querySelector('#cf-ok').checked ? ['cf-ok', 'Devam etmek için koşulları onaylayın.'] : null;
+    if (err) { toast(err[1]); f.querySelector(`#${err[0]}`).focus(); return; }
+
+    // Kart bilgisi saklanmaz; yalnızca talep kaydedilir.
+    const { name, phone, guests, quote: q } = pending;
     const req = DB.createRequest({
       businessId: biz.id, offerId: offer?.id || null, code: hasRef ? code : null, roomId: st.roomId,
-      guestName: name, phone, guests: +f.guests.value,
+      guestName: name, phone, guests,
       checkIn: st.checkIn, checkOut: st.checkOut, nights: q.nights,
       list: q.list, discount: q.discount, total: q.total,
     });
-    f.outerHTML = `
+    pending = null;
+    $modalCard.innerHTML = doneHtml(req);
+    const form = document.getElementById('reqForm');
+    if (form) form.outerHTML = `
       <div class="card card-pad gh-done">
         <div class="empty-ico">${ic('check')}</div>
-        <h2 class="gh-h2">Ön talebiniz iletildi</h2>
-        <p>${esc(biz.name)} · ${esc(room().name)}<br>${fmtLong(req.checkIn)} → ${fmtLong(req.checkOut)} · ${req.nights} gece</p>
-        <div class="gh-done-total">${money(req.total)}${req.discount ? `<small>${money(req.discount)} davet indirimi dahil</small>` : ''}</div>
-        <p class="gh-note">${ic('clock')} Otel talebinizi inceleyip sizi <b>${esc(phone)}</b> numarasından arayacak.</p>
-        <a class="btn btn-ghost btn-block" href="extranet.html#/b/requests" target="_blank" rel="noopener">${ic('external')} Demo: otel panelinde gör</a>
+        <h2 class="gh-h2">Talebiniz alındı</h2>
+        <p>${fmtLong(req.checkIn)} → ${fmtLong(req.checkOut)} · ${money(req.total)}</p>
+        <p class="gh-note">${ic('clock')} Otel onayı en geç 2 saat içinde.</p>
+        <a class="btn btn-ghost btn-block" href="app.html">${ic('sparkles')} Elçi olun, %${PRICING.CREATOR} kazanın</a>
       </div>`;
   });
 
