@@ -3,7 +3,7 @@
 
 Kurallar (otel sahibinin verdiği):
   Temmuz (1–31), 2 kişi:  1. kategori 9.000 ₺; her üst kategori bir öncekinin +%10'u
-  Haziran = Temmuz −%20 · Mayıs = Haziran −%10 · Ağustos = Temmuz +%10
+  Haziran = Temmuz −%20 · Mayıs = Haziran −%10 · Nisan = Mayıs −%10 · Ağustos = Temmuz +%10
   1–15 Eylül = Temmuz · 16 Eylül – 30 Ekim = Mayıs
   2 kişinin dışındaki her 7+ yaş kişi: +2.000 ₺/gece · Tek kişi: −1.000 ₺/gece
 Tüm fiyatlar Excel formülüdür; "Parametreler" sayfasındaki değerler değişince tablo güncellenir.
@@ -14,7 +14,7 @@ from xml.sax.saxutils import escape
 
 OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser('~/Desktop/CasaDiDatca_Fiyat_Tablosu.xlsx')
 
-P = dict(base=9000, step=0.10, jun=0.20, may=0.10, aug=0.10, extra=2000, single=1000)
+P = dict(base=9000, step=0.10, jun=0.20, may=0.10, aug=0.10, extra=2000, single=1000, apr=0.10)
 
 # Odalar: (ad, kategori, maks. kişi, teyit gerekiyor mu?)
 ROOMS = [
@@ -24,8 +24,8 @@ ROOMS = [
     ('Iseo-Como-Maggiore', 3, 3, False), ('Garda', 3, 3, False), ('Cinque Terre', 3, 2, False),
     ('Capri', 4, 4, False), ('Elba', 4, 5, False),
 ]
-SEASONS = [  # (başlık, sütun)
-    ('Mayıs\n1–31 Mayıs', 'may'), ('Haziran\n1–30 Haziran', 'jun'), ('Temmuz\n1–31 Temmuz', 'jul'),
+SEASONS = [  # (başlık, anahtar)
+    ('Nisan\n1–30 Nisan', 'apr'), ('Mayıs\n1–31 Mayıs', 'may'), ('Haziran\n1–30 Haziran', 'jun'), ('Temmuz\n1–31 Temmuz', 'jul'),
     ('Ağustos\n1–31 Ağustos', 'aug'), ('Eylül (1. yarı)\n1–15 Eylül', 'sep1'), ('Eylül–Ekim\n16 Eylül – 30 Ekim', 'sep2'),
 ]
 
@@ -36,7 +36,7 @@ for _ in range(3): jul.append(R(jul[-1] * (1 + P['step'])))
 price = {}
 for c in range(4):
     j = jul[c]; jn = R(j * (1 - P['jun'])); my = R(jn * (1 - P['may'])); ag = R(j * (1 + P['aug']))
-    price[c] = dict(may=my, jun=jn, jul=j, aug=ag, sep1=j, sep2=my)
+    price[c] = dict(apr=R(my * (1 - P['apr'])), may=my, jun=jn, jul=j, aug=ag, sep1=j, sep2=my)
 
 # ---------- Hücre yardımcıları ----------
 COLS = 'ABCDEFGHIJKLMNOP'
@@ -71,8 +71,10 @@ class Sheet:
 DEF, BOLD, TL, PCT, HEAD, TLB, WARN, TITLE, NOTE, INPUT_TL, INPUT_PCT, CAT, TL_WARN, INPUT_N = range(14)
 
 PS = "Parametreler"; S2 = "'2 Kişi Fiyatları'"
+COL = {key: 2 + i for i, (_, key) in enumerate(SEASONS)}  # sezon → sütun indeksi
+def L(key): return COLS[COL[key]]
 # ---------- Sayfa 1: 2 kişi fiyatları ----------
-t = Sheet('2 Kişi Fiyatları', [13, 34, 15, 15, 15, 15, 16, 19])
+t = Sheet('2 Kişi Fiyatları', [13, 34, 14, 14, 14, 14, 14, 15, 19])
 t.put(0, 1, 'Casa Di Datça — Gecelik oda fiyatları (2 kişi, kahvaltı dahil)', s=TITLE)
 t.put(0, 2, 'Tüm fiyatlar "Parametreler" sayfasındaki değerlerden formülle hesaplanır.', s=NOTE)
 t.put(0, 4, 'Kategori', s=HEAD); t.put(1, 4, 'Odalar', s=HEAD)
@@ -82,20 +84,21 @@ for c in range(4):
     r = 5 + c
     rooms = ', '.join(n + (' *' if w else '') for n, k, _, w in ROOMS if k == c + 1)
     t.put(0, r, f'{c + 1}. kategori', s=CAT); t.put(1, r, rooms, s=WARN if '*' in rooms else DEF)
-    E = ref(4, r)
-    fj = f'{PS}!$B$4' if c == 0 else f'ROUND({ref(4, r - 1)}*(1+{PS}!$B$5),0)'
-    t.put(4, r, price[c]['jul'], f=fj, s=TLB)
-    t.put(3, r, price[c]['jun'], f=f'ROUND({E}*(1-{PS}!$B$6),0)', s=TL)
-    t.put(2, r, price[c]['may'], f=f'ROUND({ref(3, r)}*(1-{PS}!$B$7),0)', s=TL)
-    t.put(5, r, price[c]['aug'], f=f'ROUND({E}*(1+{PS}!$B$8),0)', s=TLB)
-    t.put(6, r, price[c]['sep1'], f=f'{E}', s=TL)
-    t.put(7, r, price[c]['sep2'], f=f'{ref(2, r)}', s=TL)
+    E = ref(COL['jul'], r)
+    fj = f'{PS}!$B$4' if c == 0 else f'ROUND({ref(COL["jul"], r - 1)}*(1+{PS}!$B$5),0)'
+    t.put(COL['jul'], r, price[c]['jul'], f=fj, s=TLB)
+    t.put(COL['jun'], r, price[c]['jun'], f=f'ROUND({E}*(1-{PS}!$B$6),0)', s=TL)
+    t.put(COL['may'], r, price[c]['may'], f=f'ROUND({ref(COL["jun"], r)}*(1-{PS}!$B$7),0)', s=TL)
+    t.put(COL['apr'], r, price[c]['apr'], f=f'ROUND({ref(COL["may"], r)}*(1-{PS}!$B$11),0)', s=TL)
+    t.put(COL['aug'], r, price[c]['aug'], f=f'ROUND({E}*(1+{PS}!$B$8),0)', s=TLB)
+    t.put(COL['sep1'], r, price[c]['sep1'], f=f'{E}', s=TL)
+    t.put(COL['sep2'], r, price[c]['sep2'], f=f'{ref(COL["may"], r)}', s=TL)
 t.put(0, 10, '* Kategorisi teyit edilecek oda (aşağıdaki nota bakın).', s=NOTE)
 t.put(0, 11, 'Ek kişi (2 kişinin dışında, 7 yaş ve üzeri): kişi başı gecelik +2.000 ₺ · Tek kişi: −1.000 ₺ → "Kişi Sayısına Göre" sayfası.', s=NOTE)
-t.put(0, 12, 'Nisan için fiyat verilmedi (otel Nisan–Ekim açık). 31 Ekim ve sonrası tabloda yok.', s=NOTE)
+t.put(0, 12, 'Nisan = Mayıs −%10. 31 Ekim tabloda yok (16 Eylül – 30 Ekim dönemi).', s=NOTE)
 
 # ---------- Sayfa 2: kişi sayısına göre ----------
-k = Sheet('Kişi Sayısına Göre', [13, 22, 15, 15, 15, 15, 16, 19])
+k = Sheet('Kişi Sayısına Göre', [13, 22, 14, 14, 14, 14, 14, 15, 19])
 k.put(0, 1, 'Kişi sayısına göre gecelik fiyatlar', s=TITLE)
 k.put(0, 2, '1 kişi = 2 kişi fiyatı − tek kişi indirimi · 3+ kişi = 2 kişi fiyatı + (kişi − 2) × ek kişi ücreti (7 yaş ve üzeri)', s=NOTE)
 row = 4
@@ -125,9 +128,9 @@ for i, h in enumerate(['Oda', 'Kategori', 'Maks. kişi', 'Mayıs (2 kişi)', 'Te
 for j, (nm, kk, cap, warn) in enumerate(ROOMS):
     r = 5 + j
     o.put(0, r, nm, s=BOLD); o.put(1, r, kk, s=INPUT_N); o.put(2, r, cap, s=INPUT_N)
-    o.put(3, r, price[kk - 1]['may'], f=f"INDEX({S2}!$C$5:$C$8,{ref(1, r)})", s=TL)
-    o.put(4, r, price[kk - 1]['jul'], f=f"INDEX({S2}!$E$5:$E$8,{ref(1, r)})", s=TLB)
-    o.put(5, r, price[kk - 1]['aug'], f=f"INDEX({S2}!$F$5:$F$8,{ref(1, r)})", s=TL)
+    o.put(3, r, price[kk - 1]['may'], f=f"INDEX({S2}!${L('may')}$5:${L('may')}$8,{ref(1, r)})", s=TL)
+    o.put(4, r, price[kk - 1]['jul'], f=f"INDEX({S2}!${L('jul')}$5:${L('jul')}$8,{ref(1, r)})", s=TLB)
+    o.put(5, r, price[kk - 1]['aug'], f=f"INDEX({S2}!${L('aug')}$5:${L('aug')}$8,{ref(1, r)})", s=TL)
     note = 'Kategori teyit edilecek (listede belirtilmemiş)' if warn else ''
     if nm in ('Capri',): note = 'Bahçe evi · kapasite teyit edilecek'
     if nm in ('Elba',): note = 'Aile dairesi · kapasite teyit edilecek'
@@ -147,6 +150,7 @@ rows = [
     ('Ağustos artışı (Temmuz\'a göre)', P['aug'], INPUT_PCT, 'Ağustos = Temmuz +%10 · 1–15 Eylül = Temmuz'),
     ('Ek kişi ücreti (7 yaş ve üzeri, kişi başı gecelik)', P['extra'], INPUT_TL, '2 kişinin dışındaki her kişi için'),
     ('Tek kişi indirimi (gecelik)', P['single'], INPUT_TL, '1 kişi = 2 kişi fiyatı − bu tutar'),
+    ('Nisan indirimi (Mayıs\'a göre)', P['apr'], INPUT_PCT, 'Nisan = Mayıs −%10'),
 ]
 for j, (a, v, s_, d) in enumerate(rows):
     r = 4 + j
