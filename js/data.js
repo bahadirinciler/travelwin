@@ -1,7 +1,7 @@
 /* Turizmlink — demo veri katmanı (localStorage). Backend gelene kadar mock "API". */
 (function () {
   // v5: Casa Di Datça gerçek odaları (Capri dahil) ve fotoğrafları — eski demo verisi yerine yeni seed yüklenir.
-  const KEY = 'turizmlink:v5';
+  const KEY = 'turizmlink:v6';
 
   /* ---- Gelir modeli ----
      Satış: otel, misafirin ödediği tutar üzerinden toplam %7 öder → %5 elçiye (net), %2 Turizmlink'e.
@@ -33,18 +33,24 @@
       businesses: [
         {
           id: 'b5', name: 'Casa Di Datça', region: 'Datça',
-          tagline: 'Datça\'da taş mimari, havuz ve her biri bir İtalyan kentinin adını taşıyan odalar.',
-          about: 'Taş kemerli villası, bahçe içindeki havuzu ve bambu gölgeli restoran terasıyla Casa Di Datça, Datça\'nın sakinliğini İtalyan esintisiyle buluşturur. Odalar Arezzo\'dan Portofino\'ya İtalyan kentlerinin adını taşır; şömineli kütüphane salonu ve manzaralı ortak alanlar misafirlere açıktır.',
-          features: ['Açık havuz', 'Mamma Mia restoran & pizzeria', 'Kahvaltı', 'Şömineli kütüphane salonu', 'Geniş bahçe', 'Ücretsiz otopark'],
+          // Bilgiler: casadidatca.com + otel sahibi (deniz mesafesi)
+          tagline: 'Eski Datça\'nın karşısında, 10 dönümlük vadide taş mimarili butik otel.',
+          about: 'Sadece 12 özel oda: her biri farklı dekore edilmiş, yüksek tavanlı ve aydınlık. Oda & kahvaltı konseptinde kahvaltı her sabah özenle hazırlanır; akşam yemeği servisi yoktur, yakında birçok seçkin restoran bulunur. Selvili bahçeler, taş yollar, geniş verandalar ve havuz başında sakin bir tatil.',
+          features: ['Kahvaltı dahil', 'Açık havuz', 'Denize 3 km · 7–8 dk', 'Eski Datça\'ya birkaç dakika', 'Geniş verandalar ve bahçe', 'Evcil hayvan kabul edilir'],
+          info: [
+            ['Sezon', 'Nisan – Ekim sonu'], ['Konsept', 'Oda & kahvaltı · akşam yemeği yok'],
+            ['Deniz', '3 km · araçla 7–8 dakika'], ['Koylar', 'Birçok koy ve plaj araçla 10–15 dakika'],
+            ['Çocuk', '7 yaş ve üzeri yetişkin sayılır'], ['Evcil hayvan', 'Kabul edilir'],
+          ],
           // Fotoğraflar: assets/casadidatca (kaynak: GORSELLER/CASADIDATCA, tools/casadidatca-gorseller.sh ile rötuşlu)
           cover: 'assets/casadidatca/hero.jpg',
           gallery: [
-            ['havuz-aksam', 'Akşam havuz başı'], ['tas-villa', 'Taş villa'], ['restoran-teras', 'Restoran terası'],
+            ['havuz-aksam', 'Akşam havuz başı'], ['tas-villa', 'Taş villa'], ['restoran-teras', 'Bambu gölgeli teras'],
             ['kahvalti', 'Kahvaltı'], ['drone-gunbatimi', 'Gün batımında otel'], ['salon-manzara', 'Manzaralı salon'],
             ['somine-kutuphane', 'Şömineli kütüphane'], ['tas-kemer', 'Taş kemerler'], ['bahce-yolu', 'Bahçe yolu'], ['havuz-gece', 'Gece havuz'], ['capri-veranda', 'Capri bahçe evi verandası'],
           ].map(([f, t]) => ({ src: 'assets/casadidatca/gallery/' + f + '.jpg', thumb: 'assets/casadidatca/thumbs/' + f + '.jpg', title: t })),
           media: [
-            ['villa-aksam', 'Taş villa, akşam', 'Story'], ['havuz', 'Havuz başı', 'Reels kapağı'], ['restoran', 'Restoran terası', 'Story'],
+            ['villa-aksam', 'Taş villa, akşam', 'Story'], ['havuz', 'Havuz başı', 'Reels kapağı'], ['restoran', 'Bambu gölgeli teras', 'Story'],
             ['kahvalti', 'Kahvaltı sofrası', 'Reels kapağı'], ['yesil-kapi', 'Yeşil kapı', 'Story'], ['tas-kemer', 'Taş kemerler', 'Story'],
             ['drone', 'Gün batımında Datça', 'Reels kapağı'], ['oda', 'Cinque Terre odası', 'Story'], ['capri-bahce', 'Capri bahçe evi', 'Story'],
           ].map(([f, t, fmt]) => ({ id: f, src: 'assets/casadidatca/story/' + f + '.jpg', thumb: 'assets/casadidatca/story/thumbs/' + f + '.jpg', title: t, format: fmt })),

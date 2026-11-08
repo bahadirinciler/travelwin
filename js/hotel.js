@@ -173,7 +173,8 @@
       <div class="gh-grid">
         <div class="gh-main">
           ${biz.about ? `<section class="card card-pad"><h2 class="gh-h2">Otel hakkında</h2><p class="gh-p">${esc(biz.about)}</p>
-            ${biz.features?.length ? `<ul class="gh-feats">${biz.features.map((f) => `<li>${ic('check')} ${esc(f)}</li>`).join('')}</ul>` : ''}</section>` : ''}
+            ${biz.features?.length ? `<ul class="gh-feats">${biz.features.map((f) => `<li>${ic('check')} ${esc(f)}</li>`).join('')}</ul>` : ''}
+            ${biz.info?.length ? `<dl class="gh-info">${biz.info.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>` : ''}</section>` : ''}
 
           <section class="card card-pad">
             <h2 class="gh-h2">Oda seçin</h2>
