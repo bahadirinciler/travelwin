@@ -1,14 +1,15 @@
 /* Turizmlink — demo veri katmanı (localStorage). Backend gelene kadar mock "API". */
 (function () {
-  // v8: Casa Di Datça sezonluk fiyatlandırma (kategori × sezon, kişi sayısı) — eski demo verisi yerine yeni seed yüklenir.
-  const KEY = 'turizmlink:v8';
+  // v9: Tavsiye & paylaşım modeli (%12 toplam feragat) — barter/hibrit kaldırıldı, yeni seed yüklenir.
+  const KEY = 'turizmlink:v9';
 
-  /* ---- Gelir modeli ----
-     Satış: otel, misafirin ödediği tutar üzerinden toplam %7 öder → %5 elçiye (net), %2 Turizmlink'e.
-     Misafir: elçi linkiyle gelen misafir liste fiyatından %5 doğrudan indirim alır.
-     Barter (konaklama karşılığı içerik): otel eşleşme başına sabit hizmet bedeli öder.
-     Hibrit: ikisi birden. */
-  const PRICING = { TOTAL: 7, CREATOR: 5, PLATFORM: 2, GUEST: 5, BARTER_FEE: 1500 };
+  /* ---- Gelir modeli: Tavsiye ve Organik İçerik (UGC) Motoru ----
+     Tüm oranlar odanın LİSTE fiyatı üzerinden (10.000 ₺ → 500 + 500 + 200):
+     %5 Paylaşım indirimi → misafire (karşılığında oteli etiketleyerek paylaşım = organik içerik)
+     %5 Tavsiye komisyonu → linkle satışı getiren elçiye (link yoksa bu maliyet yok)
+     %2 Platform payı     → Turizmlink (rezervasyon + link takip altyapısı)
+     Otele net %88. */
+  const PRICING = { GUEST: 5, CREATOR: 5, PLATFORM: 2, TOTAL: 12, NET: 88 };
 
   const REGIONS = ['Datça', 'Bodrum', 'Fethiye', 'Kaş', 'Antalya', 'Kapadokya', 'Marmaris', 'Alaçatı', 'Göcek'];
   const CATEGORIES = {
@@ -19,9 +20,7 @@
     aktivite: { label: 'Aktivite', icon: 'waves' },
   };
   const MODELS = {
-    commission: { label: 'Komisyon', filter: 'Sadece Komisyon', icon: 'percent', desc: `Her satıştan toplam %${PRICING.TOTAL}: %${PRICING.CREATOR} elçiye, %${PRICING.PLATFORM} Turizmlink'e. Misafire %${PRICING.GUEST} indirim.` },
-    stay: { label: 'Barter', filter: 'Ücretsiz Konaklama (Barter)', icon: 'bed', desc: 'İçerik karşılığı ücretsiz konaklama; eşleşme başına sabit hizmet bedeli.' },
-    hybrid: { label: 'Hibrit', filter: 'Hibrit', icon: 'sparkles', desc: `Ücretsiz konaklama + satışlardan %${PRICING.CREATOR} elçi komisyonu.` },
+    commission: { label: 'Tavsiye', filter: 'Tavsiye komisyonu', icon: 'percent', desc: `Linkle gelen her rezervasyondan liste fiyatının %${PRICING.CREATOR}'i elçiye.` },
   };
 
   const CURRENT = { business: 'b5', creator: 'c1' };
@@ -88,16 +87,16 @@
       ],
       offers: [
         {
-          id: 'o8', businessId: 'b5', title: 'Casa Di Datça — Konaklama + içerik iş birliği', category: 'otel', region: 'Datça',
-          description: 'Taş mimarili, havuzlu butik otelimizi takipçilerine tanıtacak elçiler arıyoruz. Linkinle gelen misafir %5 indirim alır.',
-          price: 9000, unit: 'gece', model: 'hybrid', stay: { nights: 2, guests: 2 },
+          id: 'o8', businessId: 'b5', title: 'Casa Di Datça — Elçi tavsiye programı', category: 'otel', region: 'Datça',
+          description: 'Taş mimarili, havuzlu butik otelimizi sevdiklerine önerecek elçiler arıyoruz. Linkinle gelen misafir %5 indirimle kalır, sen her rezervasyondan %5 nakit kazanırsın.',
+          price: 9000, unit: 'gece', model: 'commission', stay: null,
           deliverables: ['1 dikey video (Reels/TikTok, min. 30 sn)', '3 Story (link sticker\'lı)', 'Google yorum'],
           minFollowers: 5000, active: true, createdAt: now - 1 * 3600000,
         },
         {
           id: 'o1', businessId: 'b1', title: 'Deniz Manzaralı Suit — 3 Gece', category: 'otel', region: 'Bodrum',
           description: 'Gümbet koyuna bakan butik otelimizde kahvaltı dahil deniz manzaralı suit. Sezon sonu kampanyamızı tanıtacak üreticiler arıyoruz.',
-          price: 18500, model: 'hybrid', stay: { nights: 2, guests: 2 },
+          price: 18500, model: 'commission', stay: null,
           deliverables: ['1 Reels (min. 30 sn)', '3 Story (link sticker\'lı)', 'Google yorum'],
           minFollowers: 10000, active: true, createdAt: now - 6 * day,
         },
@@ -111,7 +110,7 @@
         {
           id: 'o3', businessId: 'b3', title: 'Mağara Suit + Balon Turu Paketi', category: 'otel', region: 'Kapadokya',
           description: 'Gün doğumunda balon turu ve tarihi mağara odada 2 gece. Çift içerikleri için ideal.',
-          price: 32000, model: 'stay', stay: { nights: 2, guests: 2 },
+          price: 32000, model: 'commission', stay: null,
           deliverables: ['1 YouTube vlog veya 2 Reels', '5 Story', 'Ham fotoğraf kullanım hakkı'],
           minFollowers: 30000, active: true, createdAt: now - 1 * day,
         },
@@ -125,7 +124,7 @@
         {
           id: 'o5', businessId: 'b4', title: 'Likya Yolu 3 Günlük Rehberli Yürüyüş', category: 'tur', region: 'Fethiye',
           description: 'Ölüdeniz – Kabak arası rehberli yürüyüş, pansiyon konaklama ve yemekler dahil.',
-          price: 9800, model: 'hybrid', stay: { nights: 2, guests: 1 },
+          price: 9800, model: 'commission', stay: null,
           deliverables: ['Blog yazısı veya YouTube videosu', '4 Story'],
           minFollowers: 8000, active: true, createdAt: now - 12 * day,
         },
@@ -139,7 +138,7 @@
         {
           id: 'o7', businessId: 'b2', title: 'Marmaris Gün Batımı Yelken Turu', category: 'tekne', region: 'Marmaris',
           description: 'Kaptanlı yelkenli ile 3 saatlik gün batımı turu; içecek ve meze ikramı dahil.',
-          price: 4200, model: 'stay', stay: { nights: 1, guests: 2 },
+          price: 4200, model: 'commission', stay: null,
           deliverables: ['1 Reels', '3 Story'],
           minFollowers: 15000, active: true, createdAt: now - 4 * day,
         },
@@ -273,14 +272,8 @@
     offers(filter = {}) {
       return state.offers
         .filter((o) => (filter.businessId ? o.businessId === filter.businessId : true))
-        .filter((o) => (filter.activeOnly ? o.active && (DB.hasCommission(o) || DB.hasBarter(o)) : true))
+        .filter((o) => (filter.activeOnly ? o.active : true))
         .sort((a, b) => b.createdAt - a.createdAt);
-    },
-    /** "İçerik Üretici Ağırlama" (barter) açık mı? Varsayılan: açık. */
-    hostingOn(businessId) { return DB.business(businessId)?.hosting !== false; },
-    setHosting(businessId, on) {
-      const b = DB.business(businessId); if (!b) return null;
-      b.hosting = !!on; save(state); return b.hosting;
     },
     createOffer(data) {
       const o = { id: uid('o'), active: true, createdAt: Date.now(), ...data };
@@ -342,7 +335,7 @@
       q.status = approve ? 'approved' : 'rejected';
       q.decidedAt = Date.now();
       save(state);
-      if (approve && q.code) DB.trackSale(q.code, q.total);
+      if (approve && q.code) DB.trackSale(q.code, q.list); // ciro = liste fiyatı (brüt)
       return q;
     },
     /** Elçinin kodlarıyla gelen, otel onayı bekleyen ön talepler. */
@@ -403,29 +396,26 @@
       r.cat = Math.min(4, Math.max(1, +cat || 1)); save(state); return r;
     },
 
-    /** Misafir fiyatı: liste − %5 davet indirimi (yalnızca geçerli elçi koduyla). */
-    guestPrice(list, hasRef) {
-      const discount = hasRef ? pct(list, PRICING.GUEST) : 0;
+    /** Misafir fiyatı: liste − %5 paylaşım indirimi (misafir paylaşım jestini onayladıysa). */
+    guestPrice(list, share) {
+      const discount = share ? pct(list, PRICING.GUEST) : 0;
       return { list, discount, total: list - discount };
     },
 
-    /* ---- Gelir hesapları (tek kaynak) ---- */
-    hasCommission(o) { return !!o && o.model !== 'stay'; },
-    // Ağırlama kapalıysa barter kısmı geçersizdir (hibrit → yalnızca komisyon, barter → yayında görünmez).
-    hasBarter(o) { return !!o && o.model !== 'commission' && DB.hostingOn(o.businessId); },
-    /** Bir başvurunun gelir dağılımı (ciro = misafirin ödediği): toplam %7, elçi %5, platform %2, barter hizmet bedeli. */
+    /* ---- Gelir hesapları (tek kaynak) — hepsi liste fiyatı üzerinden ---- */
+    /** Bir elçinin getirdiği ciro (liste fiyatı) için dağılım: %5 misafir, %5 elçi, %2 platform, %88 otel. */
     split(app) {
-      const o = DB.offer(app.offerId);
-      const comm = DB.hasCommission(o) ? app.revenue : 0;
-      const fee = app.status === 'approved' && o && o.model !== 'commission' ? PRICING.BARTER_FEE : 0; // geçmiş eşleşme: anahtardan bağımsız
-      return {
-        pool: pct(comm, PRICING.TOTAL),
-        creator: pct(comm, PRICING.CREATOR),
-        platform: pct(comm, PRICING.PLATFORM),
-        fee,
-      };
+      const list = app.revenue || 0;
+      const guest = pct(list, PRICING.GUEST), creator = pct(list, PRICING.CREATOR), platform = pct(list, PRICING.PLATFORM);
+      return { list, guest, creator, platform, net: list - guest - creator - platform };
     },
     commissionOf(app) { return DB.split(app).creator; },
+    /** Tek rezervasyonun dağılımı: elçi payı yalnızca ref koduyla gelen satışta; misafir indirimi paylaşım jestiyle. */
+    requestSplit(q) {
+      const creator = q.code ? pct(q.list, PRICING.CREATOR) : 0;
+      const platform = pct(q.list, PRICING.PLATFORM);
+      return { list: q.list, discount: q.discount || 0, paid: q.total, creator, platform, net: q.total - creator - platform };
+    },
 
     /** Elçi linki: misafiri otelin rezervasyon sayfasına (hotel.html) kodla götürür. */
     affiliateUrl(code) {
