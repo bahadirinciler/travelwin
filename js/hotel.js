@@ -54,6 +54,8 @@
   const offer = refOffer || DB.offers({ businessId: biz.id, activeOnly: true })[0] || null;
   const creator = app ? DB.creator(app.creatorId) : null;
   const hasRef = !!app;
+  // URL'de geçerli biçimde bir ?ref= kodu varsa (demo listesinde olmasa da) elçi payı ve %10 ön ödeme uygulanır.
+  const refCode = /^[A-Za-z0-9ÇĞİÖŞÜçğıöşü-]{3,20}$/.test(code) ? code.toLocaleUpperCase('tr-TR') : '';
 
   // Odalar: otelin oda listesi yoksa teklif paketini tek "oda" olarak göster.
   const rooms = biz.rooms?.length ? biz.rooms : offer ? [{ id: 'pkg', name: offer.title, guests: offer.stay?.guests || 2, price: offer.price }] : [];
@@ -118,7 +120,7 @@
       if (g && g.season === n.season && g.price === n.price) g.count++;
       else groups.push({ season: n.season, price: n.price, count: 1 });
     });
-    return { nights: sq.nights.length, groups, persons, ...DB.guestPrice(sq.list, st.share, hasRef) };
+    return { nights: sq.nights.length, groups, persons, ...DB.guestPrice(sq.list, st.share, !!refCode) };
   }
 
   /** Ödeme planı: şimdi online ön ödeme + girişte otele ödenecek kalan. */
@@ -268,6 +270,7 @@
               <div class="field"><label for="g-kids">Çocuk (0–6 yaş)</label><select class="select" id="g-kids" name="kids">${[0, 1, 2].map((n) => `<option value="${n}" ${n === st.kids ? 'selected' : ''}>${n ? `${n} · ücretsiz` : 'Yok'}</option>`).join('')}</select></div>
               <div class="field full"><label for="g-phone">Telefon</label><input class="input" id="g-phone" name="phone" type="tel" autocomplete="tel" required placeholder="05xx xxx xx xx" /></div>
               <div class="field full"><label for="g-name">Ad soyad</label><input class="input" id="g-name" name="guestName" autocomplete="name" required placeholder="Adınız ve soyadınız" /></div>
+              <div class="field full"><label for="g-email">E-posta</label><input class="input" id="g-email" name="email" type="email" autocomplete="email" required placeholder="ornek@eposta.com" /></div>
             </div>
             <label class="share-check"><input type="checkbox" id="g-share" ${st.share ? 'checked' : ''} /><span>Konaklamam sırasında otelde kısa bir video çekip oteli etiketleyerek sosyal medyada paylaşmaktan mutluluk duyarım. <b>%${PRICING.GUEST} indirimli fiyatımı onayla.</b></span></label>
             <button class="btn btn-accent btn-block btn-book" type="submit">${ic('lock')} <span class="book-label">Ön Ödeme ile Yerini Ayırt</span></button>
@@ -448,8 +451,10 @@
     if (!q) { toast('Lütfen giriş ve çıkış tarihini seçin.'); return; }
     const name = f.guestName.value.trim();
     const phone = f.phone.value.trim();
+    const email = f.email.value.trim();
     if (!name || !phone) { toast('Ad soyad ve telefon gerekli.'); (name ? f.phone : f.guestName).focus(); return; }
-    pending = { name, phone, guests: q.persons, kids: st.kids, quote: q };
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast('Lütfen geçerli bir e-posta adresi girin.'); f.email.focus(); return; }
+    pending = { name, phone, email, guests: q.persons, kids: st.kids, quote: q };
     openModal(confirmHtml());
   });
 
@@ -461,7 +466,7 @@
     if (t.id === 'cc-cvc') t.value = t.value.replace(/\D/g, '').slice(0, 4);
   });
 
-  $modalCard.addEventListener('submit', (e) => {
+  $modalCard.addEventListener('submit', async (e) => {
     e.preventDefault();
     const f = e.target;
     if (f.id !== 'confirmForm' || !pending) return;
@@ -476,11 +481,35 @@
       !f.querySelector('#cf-ok').checked ? ['cf-ok', 'Devam etmek için koşulları onaylayın.'] : null;
     if (err) { toast(err[1]); f.querySelector(`#${err[0]}`).focus(); return; }
 
-    // Kart bilgisi saklanmaz; yalnızca talep kaydedilir.
-    const { name, phone, guests, kids, quote: q } = pending;
+    // Kart bilgisi saklanmaz; rezervasyon Supabase'e kaydedilir.
+    const { name, phone, email, guests, kids, quote: q } = pending;
+    const btn = f.querySelector('button[type="submit"]');
+    const btnHtml = btn.innerHTML;
+    btn.disabled = true; btn.textContent = 'Kaydediliyor…';
+    const { error } = await TLSupa.rezervasyonEkle({
+      otel_adi: `${biz.name} · ${room().name}`,
+      misafir_ad_soyad: name,
+      misafir_telefon: phone,
+      misafir_email: email,
+      giris_tarihi: st.checkIn,
+      cikis_tarihi: st.checkOut,
+      liste_fiyati: Math.round(q.list),
+      indirimli_tutar: Math.round(q.total),
+      on_odeme_tutari: Math.round(q.deposit),
+      otelde_odenecek_tutar: Math.round(q.atHotel),
+      elci_kodu: refCode || null,
+      elci_payi: refCode ? DB.pct(q.list, PRICING.CREATOR) : 0,
+      durum: 'bekliyor',
+    });
+    if (error) {
+      console.error('Rezervasyon kaydı:', error);
+      btn.disabled = false; btn.innerHTML = btnHtml;
+      toast('Rezervasyonunuz şu an kaydedilemedi. Lütfen tekrar deneyin veya bizi arayın.');
+      return;
+    }
     const req = DB.createRequest({
-      businessId: biz.id, offerId: offer?.id || null, code: hasRef ? code : null, roomId: st.roomId,
-      guestName: name, phone, guests, kids,
+      businessId: biz.id, offerId: offer?.id || null, code: refCode || null, roomId: st.roomId,
+      guestName: name, phone, email, guests, kids,
       checkIn: st.checkIn, checkOut: st.checkOut, nights: q.nights,
       list: q.list, discount: q.discount, total: q.total, deposit: q.deposit, atHotel: q.atHotel, share: st.share,
     });

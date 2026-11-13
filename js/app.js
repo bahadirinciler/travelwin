@@ -130,7 +130,7 @@
     const items = NAV[role];
     const badges = role === 'business' ? {
       '#/b/apps': DB.applications({ businessId: CURRENT.business, status: 'pending' }).length,
-      '#/b/requests': DB.requests({ businessId: CURRENT.business, status: 'pending' }).length,
+      '#/b/requests': live.rows ? live.rows.filter((q) => q.status === 'pending').length : 0,
     } : {};
     const isActive = (href) => path === href.slice(1) || (href === '#/b/offers' && path === '/b/new');
     const side = document.getElementById('sidenav');
@@ -217,10 +217,10 @@
   function viewCreatorDashboard() {
     const me = DB.creator(CURRENT.creator);
     const apps = myApproved();
-    const sales = apps.reduce((n, a) => n + a.sales, 0);
-    const balance = apps.reduce((n, a) => n + DB.commissionOf(a), 0);
-    const pend = DB.pendingRequestsFor(me.id);
-    const pendComm = pend.reduce((n, q) => n + pct(q.list, PRICING.CREATOR), 0);
+    const codes = [...new Set(apps.flatMap((a) => [a.code, ...(a.aliases || [])]).filter(Boolean).map((c) => c.toLocaleUpperCase('tr-TR')))];
+    if (elci.key !== codes.join('|')) { elci.key = codes.join('|'); setTimeout(() => loadElci(codes)); }
+    const lr = elci.rows;
+    const lk = elci.lookup;
     const steps = [
       ['link', 'Linkini Al', 'Otelini seç, sana özel indirimli tavsiye linkini oluştur.'],
       ['send', 'Paylaş', `Sosyal medyada veya arkadaş ortamında paylaş; gelenler %${PRICING.GUEST} indirimle kalsın.`],
@@ -234,9 +234,15 @@
       </section>
       <div id="lbWrap">${linkBuilderHtml()}</div>
       <div class="grid grid-stats grid-2">
-        ${stat({ label: 'Toplam yönlendirilen misafir', value: num.format(sales + pend.length), sub: `${sales} tamamlanan · ${pend.length} otel onayında`, icon: 'users' })}
-        ${stat({ label: `Biriken nakit bakiye (%${PRICING.CREATOR} brüt)`, value: money(balance), sub: pend.length ? `Onay bekleyen +${money(pendComm)}` : 'Konaklama sonrası banka hesabına', icon: 'wallet', highlight: true })}
+        ${stat({ label: 'Toplam yönlendirilen misafir', value: lr ? num.format(sumBy(lr, 'toplam')) : '…', sub: lr ? `${sumBy(lr, 'onayli')} onaylı · ${sumBy(lr, 'bekleyen')} otel onayında` : (elci.err || 'Canlı veriler yükleniyor'), icon: 'users' })}
+        ${stat({ label: `Biriken kazanç (%${PRICING.CREATOR} brüt)`, value: lr ? money(sumBy(lr, 'brut_kazanc')) : '…', sub: lr && sumBy(lr, 'bekleyen_kazanc') ? `Onay bekleyen +${money(sumBy(lr, 'bekleyen_kazanc'))}` : 'Konaklama sonrası banka hesabına', icon: 'wallet', highlight: true })}
       </div>
+      <form class="card card-pad elci-q" id="elciForm" novalidate>
+        <label for="elci-code"><b>Kodunla kazancını sorgula</b><small>Ref kodunu yaz; o koddan gelen rezervasyon sayısını ve %${PRICING.CREATOR} brüt kazancını canlı gör.</small></label>
+        <div class="lg-row"><input class="input" id="elci-code" placeholder="Örn. ${esc(codes[0] || 'AYSE-DATCA')}" value="${esc(lk?.kod || '')}" autocomplete="off" /><button class="btn btn-primary" type="submit">Sorgula</button></div>
+        ${elci.lookupErr ? `<p class="lg-err">${esc(elci.lookupErr)}</p>` : ''}
+        ${lk ? `<div class="elci-res"><span><code class="ref-code">${esc(lk.kod)}</code></span><span>Referans <b>${num.format(sumBy(lk.rows, 'toplam'))}</b></span><span>Onaylı <b>${num.format(sumBy(lk.rows, 'onayli'))}</b></span><span>Brüt kazanç <b>${money(sumBy(lk.rows, 'brut_kazanc'))}</b></span>${sumBy(lk.rows, 'bekleyen_kazanc') ? `<span>Onay bekleyen <b>+${money(sumBy(lk.rows, 'bekleyen_kazanc'))}</b></span>` : ''}</div>` : ''}
+      </form>
       <p class="creator-note">${ic('info')}<span>Misafir online ön ödemesini yaptığında rezervasyon kesinleşir; konaklama tamamlandığında oda tutarının %${PRICING.CREATOR}'i (yasal kesintiler ve transfer masrafları sonrası net tutar) hesabınıza aktarılır.</span></p>`;
   }
 
@@ -396,6 +402,75 @@
       </table></div>` : empty('wallet', 'Henüz onaylı iş birliği yok', 'Başvurun onaylandığında kazançların burada görünür.')}`;
   }
 
+
+  /* ================= CANLI VERİ (Supabase) ================= */
+  const ss = { get: (k) => { try { return sessionStorage.getItem(k) || ''; } catch (e) { return ''; } },
+               set: (k, v) => { try { v ? sessionStorage.setItem(k, v) : sessionStorage.removeItem(k); } catch (e) {} } };
+  const PANEL_KEY = 'turizmlink_panel';
+  const live = { sifre: ss.get(PANEL_KEY), rows: null, loading: false, err: '', at: null };
+  const DURUM = { bekliyor: 'pending', onaylandi: 'approved', reddedildi: 'rejected' };
+  const DURUM_OF = { pending: 'bekliyor', approved: 'onaylandi', rejected: 'reddedildi' };
+  const isoDay = (v) => String(v || '').slice(0, 10);
+  const nightsOf = (a, b) => Math.max(0, Math.round((new Date(`${b}T00:00:00`) - new Date(`${a}T00:00:00`)) / 86400000));
+
+  /** Supabase satırı → panelin kullandığı rezervasyon biçimi */
+  function mapRow(r) {
+    const list = +r.liste_fiyati || 0, total = +r.indirimli_tutar || 0, deposit = +r.on_odeme_tutari || 0, creator = +r.elci_payi || 0;
+    const checkIn = isoDay(r.giris_tarihi), checkOut = isoDay(r.cikis_tarihi);
+    return {
+      live: true, id: String(r.id), status: DURUM[r.durum] || 'pending',
+      guestName: r.misafir_ad_soyad || '—', phone: r.misafir_telefon || '', email: r.misafir_email || '', otel: r.otel_adi || '',
+      checkIn, checkOut, nights: nightsOf(checkIn, checkOut), code: r.elci_kodu || null,
+      list, discount: Math.max(0, list - total), paid: total, deposit, creator, platform: Math.max(0, deposit - creator),
+      net: +r.otelde_odenecek_tutar || 0,
+    };
+  }
+
+  const onLiveView = () => /^\/b\/(dashboard|requests)$/.test(location.hash.slice(1));
+  async function loadLive(sifre = live.sifre) {
+    if (!sifre || live.loading) return;
+    live.loading = true;
+    const { data, error } = await TLSupa.otelRezervasyonlari(sifre);
+    live.loading = false;
+    if (error) {
+      const badPass = /şifre/i.test(error.message || '');
+      live.err = badPass ? 'Panel şifresi hatalı.' : `Canlı veriler alınamadı (${error.message || 'bağlantı hatası'}).`;
+      if (badPass) { live.sifre = ''; ss.set(PANEL_KEY, ''); live.rows = null; }
+    } else {
+      live.err = ''; live.sifre = sifre; ss.set(PANEL_KEY, sifre);
+      live.rows = (data || []).map(mapRow); live.at = new Date();
+    }
+    if (PORTAL === 'business' && onLiveView()) rerender(); else if (PORTAL === 'business') renderNav(location.hash.slice(1));
+  }
+  // Panel açıkken 30 sn'de bir tazele (yalnızca canlı ekranlarda)
+  if (PORTAL === 'business') setInterval(() => { if (live.sifre && onLiveView() && !document.hidden) loadLive(); }, 30000);
+
+  function liveGate() {
+    return `<form class="card card-pad live-gate" id="liveForm" novalidate>
+        <div class="lg-head">${ic('lock')}<div><b>Canlı rezervasyonlar</b><small>Gerçek misafir kayıtlarını görmek için otel paneli şifrenizi girin.</small></div></div>
+        <div class="lg-row"><input class="input" id="live-pass" type="password" placeholder="Panel şifresi" autocomplete="current-password" /><button class="btn btn-primary" type="submit">${live.loading ? 'Yükleniyor…' : 'Göster'}</button></div>
+        ${live.err ? `<p class="lg-err">${esc(live.err)}</p>` : ''}
+      </form>`;
+  }
+  function liveBar() {
+    const t = live.at ? live.at.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) : '';
+    return `<div class="live-bar"><span class="live-dot"></span> Canlı veri${t ? ` · son güncelleme ${t}` : ''}${live.err ? ` · <span class="lg-err">${esc(live.err)}</span>` : ''}
+      <button class="btn btn-ghost btn-sm" data-action="live-refresh">${ic('clock')} Yenile</button>
+      <button class="btn btn-ghost btn-sm" data-action="live-lock">${ic('lock')} Kilitle</button></div>`;
+  }
+
+  /* ---- Elçi: canlı kazanç özeti ---- */
+  const elci = { key: null, rows: null, err: '', lookup: null, lookupErr: '' };
+  const sumBy = (rows, k) => (rows || []).reduce((n, r) => n + (+r[k] || 0), 0);
+  async function loadElci(codes) {
+    elci.key = codes.join('|');
+    if (!codes.length) { elci.rows = []; return; }
+    const { data, error } = await TLSupa.elciOzeti(codes);
+    elci.err = error ? 'Canlı kazanç bilgisi şu an alınamadı.' : '';
+    elci.rows = error ? null : data || [];
+    if (location.hash.slice(1) === '/c/dashboard') rerender();
+  }
+
   /* ---------- Otel: Dashboard ---------- */
   function payoutRows(bizId) {
     return DB.applications({ businessId: bizId, status: 'approved' }).map((a) => ({ a, c: DB.creator(a.creatorId), ...DB.split(a) }));
@@ -432,9 +507,12 @@
 
   function viewBusinessDashboard() {
     const biz = DB.business(CURRENT.business);
-    const reqs = DB.requests({ businessId: biz.id, status: 'pending' });
-    const done = DB.requests({ businessId: biz.id, status: 'approved' }).map(DB.requestSplit);
+    const rows = live.rows;
+    if (live.sifre && !rows && !live.loading) setTimeout(loadLive);
+    const reqs = rows ? rows.filter((q) => q.status === 'pending') : [];
+    const done = rows ? rows.filter((q) => q.status === 'approved') : [];
     const net = done.reduce((n, x) => n + x.net, 0);
+    const dash = (v) => (rows ? v : '—');
     return `
       <section class="pitch pitch-biz">
         <span class="eyebrow">${ic('building')} ${esc(biz.name)} · ${esc(biz.region)}</span>
@@ -443,12 +521,12 @@
       </section>
       ${mathCard()}
       <div class="grid grid-stats grid-3">
-        ${stat({ label: 'Onay bekleyen', value: reqs.length, sub: '2 saat içinde yanıtlayın', icon: 'clock' })}
-        ${stat({ label: 'Onaylı rezervasyon', value: done.length, sub: money(done.reduce((n, x) => n + x.deposit, 0)) + ' online ön ödeme alındı', icon: 'check' })}
-        ${stat({ label: 'Girişte kasanıza girecek', value: money(net), sub: 'Onaylı rezervasyonlar · nakit / POS', icon: 'wallet', highlight: true })}
+        ${stat({ label: 'Onay bekleyen', value: dash(reqs.length), sub: '2 saat içinde yanıtlayın', icon: 'clock' })}
+        ${stat({ label: 'Onaylı rezervasyon', value: dash(done.length), sub: rows ? money(done.reduce((n, x) => n + x.deposit, 0)) + ' online ön ödeme alındı' : 'Canlı veri kilitli', icon: 'check' })}
+        ${stat({ label: 'Girişte kasanıza girecek', value: dash(money(net)), sub: 'Onaylı rezervasyonlar · nakit / POS', icon: 'wallet', highlight: true })}
       </div>
       <div class="sec-row"><h2 class="section-title">Rezervasyon onayları ${reqs.length ? `(${reqs.length})` : ''}</h2><a class="link-arrow" href="#/b/requests">Tümü ${ic('arrow')}</a></div>
-      ${reqs.length ? requestTable(reqs.slice(0, 5)) : empty('inbox', 'Bekleyen rezervasyon yok', 'Misafir talepleri geldiğinde burada görünecek.')}`;
+      ${rows ? liveBar() + (reqs.length ? requestTable(reqs.slice(0, 5)) : empty('inbox', 'Bekleyen rezervasyon yok', 'Misafir talepleri geldiğinde burada görünecek.')) : liveGate()}`;
   }
 
   function appRow(a) {
@@ -479,16 +557,16 @@
     return `<div class="card table-wrap"><table class="req-table">
       <thead><tr><th>Misafir</th><th>Ref Kodu</th><th class="num">Konaklama Tutarı</th><th class="num">Online Ön Ödeme</th><th class="num">Girişte Otel Kasasına</th><th class="act">İşlem</th></tr></thead>
       <tbody>${list.map((q) => {
-        const room = DB.business(q.businessId)?.rooms?.find((r) => r.id === q.roomId);
+        const roomName = q.live ? q.otel : DB.business(q.businessId)?.rooms?.find((r) => r.id === q.roomId)?.name;
         const a = q.code ? DB.byCode(q.code) : null;
         const c = a ? DB.creator(a.creatorId) : null;
-        const x = DB.requestSplit(q);
+        const x = q.live ? q : DB.requestSplit(q);
         return `<tr>
-          <td data-l="Misafir"><b>${esc(q.guestName)}</b><small class="cell-sub">${fmtDay(q.checkIn)} → ${fmtDay(q.checkOut)} · ${q.nights} gece · ${esc(room?.name || '')}</small></td>
+          <td data-l="Misafir"><b>${esc(q.guestName)}</b><small class="cell-sub">${fmtDay(q.checkIn)} → ${fmtDay(q.checkOut)} · ${q.nights} gece · ${esc(roomName || '')}</small>${q.phone ? `<small class="cell-sub">${esc(q.phone)}${q.email ? ` · ${esc(q.email)}` : ''}</small>` : ''}</td>
           <td data-l="Ref Kodu">${q.code ? `<code class="ref-code">${esc(q.code)}</code><small class="cell-sub">${esc(c?.name || '')}</small>` : '<span class="muted">Doğrudan</span>'}</td>
           <td data-l="Konaklama Tutarı" class="num"><b>${money(x.paid)}</b>${x.discount ? `<small class="cell-sub"><s>${money(x.list)}</s> · %${PRICING.GUEST} paylaşım ind.</small>` : ''}</td>
           <td data-l="Online Ön Ödeme" class="num"><b>${money(x.deposit)}</b><small class="cell-sub">${x.creator ? `Elçi ${money(x.creator)} · ` : ''}Turizmlink ${money(x.platform)}</small></td>
-          <td data-l="Girişte Otel Kasasına" class="num"><b class="pos">${money(x.net)}</b><small class="cell-sub">%${Math.round((x.net / x.list) * 100)} · nakit / POS</small></td>
+          <td data-l="Girişte Otel Kasasına" class="num"><b class="pos">${money(x.net)}</b><small class="cell-sub">${x.list ? `%${Math.round((x.net / x.list) * 100)} · ` : ''}nakit / POS</small></td>
           <td class="act">${q.status === 'pending'
             ? `<div class="act-btns"><button class="btn btn-success btn-sm" data-action="decide-req" data-id="${q.id}" data-ok="1">${ic('check')} Onayla</button><button class="btn btn-reject btn-sm" data-action="decide-req" data-id="${q.id}" data-ok="0">${ic('x')} Reddet</button></div>`
             : statusChip(q.status)}</td>
@@ -498,14 +576,16 @@
 
   let reqFilter = 'pending';
   function viewBusinessRequests() {
-    const all = DB.requests({ businessId: CURRENT.business });
+    if (live.sifre && !live.rows && !live.loading) setTimeout(loadLive);
+    const all = live.rows || [];
     const count = (st) => all.filter((q) => q.status === st).length;
     const list = reqFilter === 'all' ? all : all.filter((q) => q.status === reqFilter);
     const tabs = [['pending', 'Bekleyen'], ['approved', 'Onaylı'], ['rejected', 'Reddedilen'], ['all', 'Tümü']];
     return `
       <div class="page-head"><div><h1>Gelen Rezervasyon Talepleri</h1><p>Misafire 2 saat içinde onay sözü verildi. Onayladığınızda misafirin kartından yalnızca online ön ödeme çekilir; kalan tutarı misafir girişte doğrudan size öder.</p></div></div>
-      <div class="pills">${tabs.map(([k, l]) => `<button class="pill ${reqFilter === k ? 'active' : ''}" data-action="req-filter" data-f="${k}">${l} (${k === 'all' ? all.length : count(k)})</button>`).join('')}</div>
-      ${list.length ? requestTable(list) : empty('inbox', 'Bu listede talep yok', 'Misafir talepleri geldiğinde burada görünecek.')}`;
+      ${live.rows ? liveBar() : liveGate()}
+      ${live.rows ? `<div class="pills">${tabs.map(([k, l]) => `<button class="pill ${reqFilter === k ? 'active' : ''}" data-action="req-filter" data-f="${k}">${l} (${k === 'all' ? all.length : count(k)})</button>`).join('')}</div>
+      ${list.length ? requestTable(list) : empty('inbox', 'Bu listede talep yok', 'Misafir talepleri geldiğinde burada görünecek.')}` : ''}`;
   }
 
   /* ---------- Otel: Takvim / Fiyat ---------- */
@@ -755,11 +835,28 @@
       }
       case 'decide-req': {
         const ok = el.dataset.ok === '1';
+        const lq = live.rows?.find((r) => r.id === id);
+        if (lq) {
+          el.disabled = true;
+          TLSupa.rezervasyonDurum(live.sifre, id, DURUM_OF[ok ? 'approved' : 'rejected']).then(({ error }) => {
+            if (error) { el.disabled = false; toast(`İşlem kaydedilemedi: ${error.message}`); return; }
+            toast(ok ? `Rezervasyon onaylandı${lq.code ? ` · ${lq.code}` : ''}` : 'Rezervasyon reddedildi');
+            loadLive();
+          });
+          break;
+        }
         const q = DB.decideRequest(id, ok);
         toast(ok ? (q.code ? `Onaylandı · satış ${q.code} koduna işlendi` : 'Ön talep onaylandı') : 'Ön talep reddedildi');
         rerender();
         break;
       }
+      case 'live-refresh':
+        loadLive();
+        break;
+      case 'live-lock':
+        live.sifre = ''; live.rows = null; live.err = ''; ss.set(PANEL_KEY, '');
+        rerender();
+        break;
       case 'lb-copy': {
         const input = document.getElementById('lb-code');
         const res = DB.setCode(lb.appId, input.value);
@@ -863,6 +960,25 @@
   document.addEventListener('submit', (e) => {
     e.preventDefault();
     const f = e.target;
+
+    if (f.id === 'liveForm') {
+      const v = f.querySelector('#live-pass').value.trim();
+      if (!v) { f.querySelector('#live-pass').focus(); return; }
+      f.querySelector('button').textContent = 'Yükleniyor…';
+      loadLive(v);
+      return;
+    }
+    if (f.id === 'elciForm') {
+      const v = f.querySelector('#elci-code').value.trim().toLocaleUpperCase('tr-TR');
+      if (!v) { f.querySelector('#elci-code').focus(); return; }
+      f.querySelector('button').textContent = 'Sorgulanıyor…';
+      TLSupa.elciOzeti([v]).then(({ data, error }) => {
+        elci.lookupErr = error ? 'Sorgu şu an yapılamadı, lütfen tekrar deneyin.' : '';
+        elci.lookup = error ? null : { kod: v, rows: data || [] };
+        rerender();
+      });
+      return;
+    }
 
     if (f.id === 'priceForm') {
       const p = readPricing(f);
