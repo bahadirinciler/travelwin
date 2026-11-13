@@ -1108,3 +1108,45 @@ td.neg, .payout-sum .neg { color: #dc2626; }
   .mc-tl li strong { grid-column: 2; }
   .grid-2 { grid-template-columns: 1fr; }
 }
+
+/* ===== v10: Ön ödeme (%10) + otelde ödeme (%85) ===== */
+.pay-split { margin-top: 12px; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.pay-split > div { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 12px; font-size: 13.5px; }
+.pay-split span { display: inline-flex; align-items: center; gap: 6px; }
+.pay-split span svg { width: 15px; height: 15px; flex: none; }
+.pay-split b { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pay-now { background: var(--success-soft); color: var(--success); font-weight: 600; }
+.pay-now b { font-size: 16px; }
+.pay-later { color: var(--ink-2); }
+.cf-sum .pay-split, .done-body .pay-split { text-align: left; margin-bottom: 12px; }
+.mc-flow { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.mc-flow > div { border-radius: 12px; padding: 12px 14px; background: var(--success-soft); color: var(--success); }
+.mc-flow > div:first-child { background: rgba(15,23,42,.05); color: var(--ink-2); }
+.mc-flow small { display: block; font-size: 12px; opacity: .85; }
+.mc-flow strong { display: block; font-size: 20px; margin: 2px 0; font-variant-numeric: tabular-nums; }
+.mc-promise { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.mc-promise span { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; padding: 6px 10px; border-radius: 999px; background: var(--success-soft); color: var(--success); }
+.mc-promise svg { width: 14px; height: 14px; }
+.creator-note { display: flex; gap: 10px; align-items: flex-start; margin: 14px 0 0; padding: 12px 14px; border-radius: 12px; background: var(--success-soft); color: var(--success); font-size: 13.5px; line-height: 1.5; }
+.creator-note svg { width: 18px; height: 18px; flex: none; margin-top: 1px; }
+@media (max-width: 560px) { .mc-flow { grid-template-columns: 1fr; } }
+.payflow { display: flex; align-items: center; justify-content: center; gap: 14px; max-width: 920px; margin: 22px auto 0; }
+.pf-step { flex: 1; display: flex; gap: 12px; align-items: center; padding: 16px 18px; border-radius: 16px; background: #fff; border: 1px solid var(--line); }
+.pf-step small { display: block; font-size: 12px; color: var(--ink-3, #64748b); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+.pf-step b { display: block; font-size: 18px; }
+.pf-step span:not(.pf-ico) { display: block; font-size: 13px; color: var(--ink-2); }
+.pf-ico { display: grid; place-items: center; width: 42px; height: 42px; flex: none; border-radius: 12px; background: rgba(15,23,42,.06); }
+.pf-ico svg { width: 20px; height: 20px; }
+.pf-hotel { border-color: transparent; background: var(--success-soft); }
+.pf-hotel b, .pf-hotel .pf-ico { color: var(--success); }
+.pf-hotel .pf-ico { background: rgba(31,138,91,.12); }
+.pf-arrow { flex: none; color: var(--ink-3, #94a3b8); display: inline-flex; }
+.pf-note { text-align: center; margin: 14px auto 0; max-width: 640px; font-size: 14px; color: var(--ink-2); }
+@media (max-width: 700px) { .payflow { flex-direction: column; align-items: stretch; } .pf-arrow { transform: rotate(90deg); align-self: center; } }
+/* 6 sütunlu onay tablosu masaüstüne sığsın */
+@media (min-width: 761px) {
+  .req-table th, .req-table td { padding: 11px 10px; }
+  .req-table th { white-space: normal; line-height: 1.25; }
+  .req-table .cell-sub { white-space: normal; }
+  .req-table td:first-child { min-width: 150px; }
+}

@@ -118,7 +118,16 @@
       if (g && g.season === n.season && g.price === n.price) g.count++;
       else groups.push({ season: n.season, price: n.price, count: 1 });
     });
-    return { nights: sq.nights.length, groups, persons, ...DB.guestPrice(sq.list, st.share) };
+    return { nights: sq.nights.length, groups, persons, ...DB.guestPrice(sq.list, st.share, hasRef) };
+  }
+
+  /** Ödeme planı: şimdi online ön ödeme + girişte otele ödenecek kalan. */
+  const pctOf = (x, list) => Math.round((x / list) * 100);
+  function payHtml(q) {
+    return `<div class="pay-split">
+        <div class="pay-now"><span>${ic('lock')} Şimdi ödenecek rezervasyon ön ödemesi (%${pctOf(q.deposit, q.list)})</span><b>${money(q.deposit)}</b></div>
+        <div class="pay-later"><span>${ic('building')} Otele girişte ödenecek tutar (%${pctOf(q.atHotel, q.list)})</span><b>${money(q.atHotel)}</b></div>
+      </div>`;
   }
 
   /* ---------- Takvim ---------- */
@@ -170,12 +179,13 @@
     return `
       <div class="sum-dates"><div><span>Giriş</span><b>${fmtLong(st.checkIn)}</b></div><div><span>Çıkış</span><b>${fmtLong(st.checkOut)}</b></div></div>
       <div class="sum-rows">
-        <div class="sum-list"><span>Liste fiyatı</span><b>${money(q.list)}</b></div>
+        <div class="sum-list"><span>Otel liste fiyatı</span><b>${money(q.list)}</b></div>
         ${q.groups.map((g) => `<div class="sum-note"><span>${g.season ? `${seasonLabel(g.season)} · ` : ''}${g.count} gece × ${money(g.price)}</span></div>`).join('')}
         ${biz.pricing && q.persons !== 2 ? `<div class="sum-note"><span>${q.persons === 1 ? `Tek kişi: gecelik −${money(biz.pricing.single)} dahil` : `${q.persons} kişi: gecelik +${money((q.persons - 2) * biz.pricing.extra)} dahil`}${st.kids ? ` · ${st.kids} çocuk (0–6 yaş) ücretsiz` : ''}</span></div>` : st.kids ? `<div class="sum-note"><span>${st.kids} çocuk (0–6 yaş) ücretsiz</span></div>` : ''}
         ${q.discount ? `<div class="sum-disc"><span>${ic('gift')} Paylaşım indirimi (%${PRICING.GUEST})</span><b>− ${money(q.discount)}</b></div>` : ''}
-        <div class="sum-total"><span>Ödenecek net tutar</span><b>${money(q.total)}</b></div>
-      </div>`;
+        <div class="sum-total"><span>${q.discount ? 'Toplam indirimli konaklama tutarı' : 'Toplam konaklama tutarı'}</span><b>${money(q.total)}</b></div>
+      </div>
+      ${payHtml(q)}`;
   }
 
   /** Oda kartı fiyatı: tarih seçiliyse o konaklamanın gecelik ortalaması, değilse en düşük sezon fiyatı. */
@@ -260,7 +270,7 @@
               <div class="field full"><label for="g-name">Ad soyad</label><input class="input" id="g-name" name="guestName" autocomplete="name" required placeholder="Adınız ve soyadınız" /></div>
             </div>
             <label class="share-check"><input type="checkbox" id="g-share" ${st.share ? 'checked' : ''} /><span>Otelde geçirdiğim keyifli anları sosyal medyada oteli etiketleyerek paylaşmaktan mutluluk duyarım. <b>%${PRICING.GUEST} indirimli fiyatımı onayla.</b></span></label>
-            <button class="btn btn-accent btn-block btn-book" type="submit">${ic('calendar')} Rezervasyonu gönder</button>
+            <button class="btn btn-accent btn-block btn-book" type="submit">${ic('lock')} <span class="book-label">Ön Ödeme ile Yerini Ayırt</span></button>
             <p class="gh-note">${ic('shield')} Şimdi ödeme alınmaz. Kartınızdan çekim, otel talebinizi onayladıktan sonra yapılır.</p>
           </form>
         </aside>
@@ -269,6 +279,8 @@
 
   function refreshPrices() {
     document.getElementById('sumWrap').innerHTML = summaryHtml();
+    const q = quote(), lbl = $root.querySelector('.book-label');
+    if (lbl) lbl.textContent = q ? `${money(q.deposit)} Ön Ödeme ile Yerini Ayırt` : 'Ön Ödeme ile Yerini Ayırt';
     $root.querySelectorAll('[data-rp]').forEach((el) => { el.outerHTML = roomPriceHtml(rooms.find((x) => x.id === el.dataset.rp)); });
   }
   function refreshBooking() {
@@ -390,9 +402,10 @@
             <div><span>${q.nights} gece</span><b class="price-pair">${q.discount ? `<s>${money(q.list)}</s>` : ''}${money(q.total)}</b></div>
           </div>
           ${q.discount ? `<div class="cf-disc">${ic('gift')} %${PRICING.GUEST} paylaşım indirimi: ${money(q.discount)} sizin</div>` : ''}
+          ${payHtml(q)}
         </div>
 
-        <div class="cf-policy">${ic('clock')}<p><b>Otelimiz talebinizi 2 saat içinde onaylayacaktır,</b> onay sonrası kartınızdan çekim yapılacaktır. Onay gelmezse hiçbir ücret alınmaz.</p></div>
+        <div class="cf-policy">${ic('clock')}<p><b>Otelimiz talebinizi 2 saat içinde onaylayacaktır.</b> Onay sonrası kartınızdan yalnızca <b>${money(q.deposit)} ön ödeme</b> çekilir; kalan <b>${money(q.atHotel)}</b> tutarı girişte doğrudan otele ödersiniz, faturanızı otel keser. Onay gelmezse hiçbir ücret alınmaz.</p></div>
 
         <fieldset class="cf-card">
           <legend>${ic('lock')} Kart bilgileri</legend>
@@ -408,7 +421,7 @@
         <label class="cf-check"><input type="checkbox" id="cf-ok" required /> <span>Rezervasyon koşullarını ve iptal politikasını okudum, kabul ediyorum.</span></label>
         <div class="cf-actions">
           <button type="button" class="btn btn-ghost" data-close>Vazgeç</button>
-          <button type="submit" class="btn btn-accent">${ic('check')} Talebi onayla</button>
+          <button type="submit" class="btn btn-accent">${ic('lock')} ${money(q.deposit)} ön ödeme ile ayırt</button>
         </div>
       </form>`;
   }
@@ -421,8 +434,9 @@
         <h2 id="modalTitle">Harika bir tatil sizi bekliyor! 🎉</h2>
         <p>${esc(biz.name)} · ${esc(room().name)}<br>${fmtLong(req.checkIn)} → ${fmtLong(req.checkOut)} · ${req.nights} gece</p>
         <div class="gh-done-total">${money(req.total)}${req.discount ? `<small>${money(req.discount)} paylaşım indirimi dahil</small>` : ''}</div>
+        ${payHtml(req)}
         ${req.discount ? `<p class="done-msg"><b>İndiriminiz onaylandı.</b> Check-in yaptığınızda size özel bir referans linki de aktifleşecek. Tatilinizden paylaşacağınız kareleri görüp otelimizi ziyaret eden her arkadaşınız için <b>%${PRICING.CREATOR} nakit teşekkür payı</b> doğrudan hesabınıza yatacak. Hem paylaştıkça indirimli kaldınız, hem de sevdiklerinize tatil önererek kazanabilirsiniz.</p>` : ''}
-        <div class="cf-policy">${ic('clock')}<p>Otelimiz talebinizi <b>2 saat içinde</b> onaylayacak; onay sonrası kartınızdan çekim yapılacak ve <b>${esc(req.phone)}</b> numarasına bilgi verilecek.</p></div>
+        <div class="cf-policy">${ic('clock')}<p>Otelimiz talebinizi <b>2 saat içinde</b> onaylayacak; onay sonrası kartınızdan <b>${money(req.deposit)} ön ödeme</b> çekilecek ve <b>${esc(req.phone)}</b> numarasına bilgi verilecek. Kalan <b>${money(req.atHotel)}</b> girişte otele ödenir.</p></div>
         <a class="btn btn-ghost btn-block" href="app.html">${ic('sparkles')} Elçi panelini şimdiden keşfedin ${ic('arrow')}</a>
       </div>`;
   }
@@ -468,7 +482,7 @@
       businessId: biz.id, offerId: offer?.id || null, code: hasRef ? code : null, roomId: st.roomId,
       guestName: name, phone, guests, kids,
       checkIn: st.checkIn, checkOut: st.checkOut, nights: q.nights,
-      list: q.list, discount: q.discount, total: q.total, share: st.share,
+      list: q.list, discount: q.discount, total: q.total, deposit: q.deposit, atHotel: q.atHotel, share: st.share,
     });
     pending = null;
     $modalCard.innerHTML = doneHtml(req);
@@ -478,6 +492,7 @@
         <div class="empty-ico">${ic('check')}</div>
         <h2 class="gh-h2">Talebiniz alındı</h2>
         <p>${fmtLong(req.checkIn)} → ${fmtLong(req.checkOut)} · ${money(req.total)}</p>
+        <p class="gh-note">${ic('lock')} Ön ödeme ${money(req.deposit)} · Girişte otele ${money(req.atHotel)}</p>
         <p class="gh-note">${ic('clock')} Otel onayı en geç 2 saat içinde.</p>
         <a class="btn btn-ghost btn-block" href="app.html">${ic('sparkles')} Sevdiklerinize önerin, %${PRICING.CREATOR} kazanın</a>
       </div>`;

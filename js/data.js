@@ -1,15 +1,16 @@
 /* Turizmlink — demo veri katmanı (localStorage). Backend gelene kadar mock "API". */
 (function () {
-  // v9: Tavsiye & paylaşım modeli (%12 toplam feragat) — barter/hibrit kaldırıldı, yeni seed yüklenir.
+  // v9: Tavsiye & paylaşım modeli. v10: Üçlü %5 + %10 ön ödeme (veri yapısı aynı, seed korunur).
   const KEY = 'turizmlink:v9';
 
-  /* ---- Gelir modeli: Tavsiye ve Organik İçerik (UGC) Motoru ----
-     Tüm oranlar odanın LİSTE fiyatı üzerinden (10.000 ₺ → 500 + 500 + 200):
-     %5 Paylaşım indirimi → misafire (karşılığında oteli etiketleyerek paylaşım = organik içerik)
-     %5 Tavsiye komisyonu → linkle satışı getiren elçiye (link yoksa bu maliyet yok)
-     %2 Platform payı     → Turizmlink (rezervasyon + link takip altyapısı)
-     Otele net %88. */
-  const PRICING = { GUEST: 5, CREATOR: 5, PLATFORM: 2, TOTAL: 12, NET: 88 };
+  /* ---- Gelir modeli: Masada 4 taraf, herkese %5 ----
+     Tüm oranlar odanın LİSTE fiyatı üzerinden (10.000 ₺ örneği):
+     %5 Paylaşım indirimi → misafire (−500; misafirin toplamı 9.500)
+     %5 Tavsiye komisyonu → linkle satışı getiren elçiye (brüt 500; link yoksa bu maliyet yok)
+     %5 Platform payı     → Turizmlink (500)
+     Tahsilat: elçi + platform payı (%10 = 1.000) rezervasyonda online ön ödeme olarak alınır;
+     kalan 8.500 (%85) misafir tarafından check-in'de doğrudan otele ödenir. */
+  const PRICING = { GUEST: 5, CREATOR: 5, PLATFORM: 5, TOTAL: 15, NET: 85, DEPOSIT: 10 };
 
   const REGIONS = ['Datça', 'Bodrum', 'Fethiye', 'Kaş', 'Antalya', 'Kapadokya', 'Marmaris', 'Alaçatı', 'Göcek'];
   const CATEGORIES = {
@@ -396,14 +397,17 @@
       r.cat = Math.min(4, Math.max(1, +cat || 1)); save(state); return r;
     },
 
-    /** Misafir fiyatı: liste − %5 paylaşım indirimi (misafir paylaşım jestini onayladıysa). */
-    guestPrice(list, share) {
+    /** Misafir fiyatı: liste − %5 paylaşım indirimi (paylaşım jesti seçiliyse).
+        Ön ödeme = platform payı + (elçi linkiyle geldiyse) elçi payı; kalanı otelde ödenir. */
+    guestPrice(list, share, hasRef = true) {
       const discount = share ? pct(list, PRICING.GUEST) : 0;
-      return { list, discount, total: list - discount };
+      const total = list - discount;
+      const deposit = pct(list, PRICING.PLATFORM) + (hasRef ? pct(list, PRICING.CREATOR) : 0);
+      return { list, discount, total, deposit, atHotel: total - deposit };
     },
 
     /* ---- Gelir hesapları (tek kaynak) — hepsi liste fiyatı üzerinden ---- */
-    /** Bir elçinin getirdiği ciro (liste fiyatı) için dağılım: %5 misafir, %5 elçi, %2 platform, %88 otel. */
+    /** Bir elçinin getirdiği ciro (liste fiyatı) için dağılım: %5 misafir, %5 elçi, %5 platform, %85 otel. */
     split(app) {
       const list = app.revenue || 0;
       const guest = pct(list, PRICING.GUEST), creator = pct(list, PRICING.CREATOR), platform = pct(list, PRICING.PLATFORM);
@@ -414,7 +418,8 @@
     requestSplit(q) {
       const creator = q.code ? pct(q.list, PRICING.CREATOR) : 0;
       const platform = pct(q.list, PRICING.PLATFORM);
-      return { list: q.list, discount: q.discount || 0, paid: q.total, creator, platform, net: q.total - creator - platform };
+      const deposit = creator + platform; // online ön ödeme (Turizmlink tahsil eder)
+      return { list: q.list, discount: q.discount || 0, paid: q.total, creator, platform, deposit, net: q.total - deposit };
     },
 
     /** Elçi linki: misafiri otelin rezervasyon sayfasına (hotel.html) kodla götürür. */

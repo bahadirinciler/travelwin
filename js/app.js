@@ -224,7 +224,7 @@
     const steps = [
       ['link', 'Linkini Al', 'Otelini seç, sana özel indirimli tavsiye linkini oluştur.'],
       ['send', 'Paylaş', `Sosyal medyada veya arkadaş ortamında paylaş; gelenler %${PRICING.GUEST} indirimle kalsın.`],
-      ['wallet', 'Nakit Kazan', `Konaklama tamamlandığında oda tutarının net %${PRICING.CREATOR}'i doğrudan banka hesabına yatsın.`],
+      ['wallet', 'Nakit Kazan', `Konaklama tamamlandığında oda tutarının %${PRICING.CREATOR}'i banka hesabına yatsın.`],
     ];
     return `
       <section class="pitch pitch-creator">
@@ -235,8 +235,9 @@
       <div id="lbWrap">${linkBuilderHtml()}</div>
       <div class="grid grid-stats grid-2">
         ${stat({ label: 'Toplam yönlendirilen misafir', value: num.format(sales + pend.length), sub: `${sales} tamamlanan · ${pend.length} otel onayında`, icon: 'users' })}
-        ${stat({ label: `Biriken nakit bakiye (net %${PRICING.CREATOR})`, value: money(balance), sub: pend.length ? `Onay bekleyen +${money(pendComm)}` : 'Kesintisiz, banka hesabına', icon: 'wallet', highlight: true })}
-      </div>`;
+        ${stat({ label: `Biriken nakit bakiye (%${PRICING.CREATOR} brüt)`, value: money(balance), sub: pend.length ? `Onay bekleyen +${money(pendComm)}` : 'Konaklama sonrası banka hesabına', icon: 'wallet', highlight: true })}
+      </div>
+      <p class="creator-note">${ic('info')}<span>Misafir online ön ödemesini yaptığında rezervasyon kesinleşir; konaklama tamamlandığında oda tutarının %${PRICING.CREATOR}'i (yasal kesintiler ve transfer masrafları sonrası net tutar) hesabınıza aktarılır.</span></p>`;
   }
 
   /* ---------- Elçi: Medya Kiti ---------- */
@@ -381,7 +382,7 @@
     }, { clicks: 0, sales: 0, revenue: 0, comm: 0 });
     const conv = t.clicks ? ((t.sales / t.clicks) * 100).toFixed(1) : '0';
     return `
-      <div class="page-head"><div><h1>Cüzdan</h1><p>Tavsiye kazançlarının özeti. Liste fiyatının net %${PRICING.CREATOR}'i: platform payını otel öder, senden kesinti yapılmaz.</p></div></div>
+      <div class="page-head"><div><h1>Cüzdan</h1><p>Tavsiye kazançlarının özeti: oda liste fiyatının %${PRICING.CREATOR}'i (brüt). Yasal kesintiler ve transfer masrafları sonrası net tutar hesabına aktarılır.</p></div></div>
       <div class="grid grid-stats">
         ${stat({ label: `Toplam komisyon (%${PRICING.CREATOR})`, value: money(t.comm), sub: 'Ödeme bekleyen', icon: 'wallet', highlight: true })}
         ${stat({ label: 'Tıklama', value: num.format(t.clicks), icon: 'pointer' })}
@@ -410,17 +411,22 @@
     const row = (p, t, d, cls = '') => `<li class="${cls}"><span class="mc-pct">%${p}</span><div><b>${t}</b><small>${d}</small></div><strong>− ${money(pct(L, p))}</strong></li>`;
     return `
       <section class="math-card" aria-labelledby="mc-title">
-        <div class="mc-head"><h2 id="mc-title">Net matematik</h2><span>${money(L)} örnek rezervasyon</span></div>
+        <div class="mc-head"><h2 id="mc-title">Otelinizden Komisyon Kesintisi Yok, Tahsilat Riski Yok</h2><span>${money(L)} örnek rezervasyon</span></div>
         <div class="mc-ota">${ic('building')}<div><b>Geleneksel acente maliyeti</b><small>Müşteri datası acentede kalır</small></div><strong>%15 – %25</strong></div>
         <div class="mc-tl">
-          <div class="mc-tl-head"><b>Turizmlink toplam feragati</b><strong>Sadece %${PRICING.TOTAL}</strong></div>
+          <div class="mc-tl-head"><b>Turizmlink toplam maliyet</b><strong>%${PRICING.TOTAL} · herkese eşit %5</strong></div>
           <ul>
-            ${row(PRICING.GUEST, 'Misafir indirimi', 'Misafire indirim jesti olur; karşılığında otelinize organik sosyal medya içeriği (UGC) üretir.')}
+            ${row(PRICING.GUEST, 'Misafir paylaşım indirimi', 'Misafire indirim jesti olur; karşılığında otelinize organik sosyal medya içeriği (UGC) üretir.')}
             ${row(PRICING.CREATOR, 'Tavsiye komisyonu', 'Odayı sattıran elçiye / eski misafire gider. Satış yoksa maliyet sıfır.')}
-            ${row(PRICING.PLATFORM, 'Platform payı', 'Rezervasyon ve link takip altyapısı.')}
+            ${row(PRICING.PLATFORM, 'Turizmlink altyapı ve ödeme hizmeti', 'Online ön ödeme, link takibi ve kanal altyapısı.')}
           </ul>
         </div>
-        <div class="mc-net"><div><b>Otele net kalan</b><small>Nakit + acenteden bağımsız doğrudan misafir datası</small></div><strong>%${PRICING.NET} · ${money(pct(L, PRICING.NET))}</strong></div>
+        <div class="mc-net"><div><b>Otel kasanıza kalan net tutar</b><small>Acenteden bağımsız doğrudan misafir datası + organik tanıtım</small></div><strong>%${PRICING.NET} · ${money(pct(L, PRICING.NET))}</strong></div>
+        <div class="mc-flow">
+          <div><small>${ic('lock')} Rezervasyonda online ön ödeme</small><strong>${money(pct(L, PRICING.DEPOSIT))} · %${PRICING.DEPOSIT}</strong><small>Misafir kartla öder; elçi ve Turizmlink payı buradan karşılanır.</small></div>
+          <div><small>${ic('building')} Check-in'de doğrudan otel kasanıza</small><strong>${money(pct(L, PRICING.NET))} · %${PRICING.NET}</strong><small>Nakit veya kendi POS'unuzla; faturayı otel keser.</small></div>
+        </div>
+        <div class="mc-promise"><span>${ic('check')} Sonradan komisyon faturası yok</span><span>${ic('check')} Sizden tahsilat yapılmaz</span><span>${ic('check')} Rezervasyon ön ödemeyle kesinleşir</span></div>
       </section>`;
   }
 
@@ -438,8 +444,8 @@
       ${mathCard()}
       <div class="grid grid-stats grid-3">
         ${stat({ label: 'Onay bekleyen', value: reqs.length, sub: '2 saat içinde yanıtlayın', icon: 'clock' })}
-        ${stat({ label: 'Onaylı rezervasyon', value: done.length, sub: money(done.reduce((n, x) => n + x.paid, 0)) + ' misafir ödemesi', icon: 'check' })}
-        ${stat({ label: 'Otelin net kazancı', value: money(net), sub: 'Onaylı rezervasyonlardan', icon: 'wallet', highlight: true })}
+        ${stat({ label: 'Onaylı rezervasyon', value: done.length, sub: money(done.reduce((n, x) => n + x.deposit, 0)) + ' online ön ödeme alındı', icon: 'check' })}
+        ${stat({ label: 'Girişte kasanıza girecek', value: money(net), sub: 'Onaylı rezervasyonlar · nakit / POS', icon: 'wallet', highlight: true })}
       </div>
       <div class="sec-row"><h2 class="section-title">Rezervasyon onayları ${reqs.length ? `(${reqs.length})` : ''}</h2><a class="link-arrow" href="#/b/requests">Tümü ${ic('arrow')}</a></div>
       ${reqs.length ? requestTable(reqs.slice(0, 5)) : empty('inbox', 'Bekleyen rezervasyon yok', 'Misafir talepleri geldiğinde burada görünecek.')}`;
@@ -471,7 +477,7 @@
   const fmtDay = (iso) => new Date(`${iso}T00:00:00`).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
   function requestTable(list) {
     return `<div class="card table-wrap"><table class="req-table">
-      <thead><tr><th>Misafir</th><th>Ref Kodu</th><th class="num">Misafirin Ödediği</th><th class="num">Otelin Net Kazancı</th><th class="act">İşlem</th></tr></thead>
+      <thead><tr><th>Misafir</th><th>Ref Kodu</th><th class="num">Konaklama Tutarı</th><th class="num">Online Ön Ödeme</th><th class="num">Girişte Otel Kasasına</th><th class="act">İşlem</th></tr></thead>
       <tbody>${list.map((q) => {
         const room = DB.business(q.businessId)?.rooms?.find((r) => r.id === q.roomId);
         const a = q.code ? DB.byCode(q.code) : null;
@@ -480,8 +486,9 @@
         return `<tr>
           <td data-l="Misafir"><b>${esc(q.guestName)}</b><small class="cell-sub">${fmtDay(q.checkIn)} → ${fmtDay(q.checkOut)} · ${q.nights} gece · ${esc(room?.name || '')}</small></td>
           <td data-l="Ref Kodu">${q.code ? `<code class="ref-code">${esc(q.code)}</code><small class="cell-sub">${esc(c?.name || '')}</small>` : '<span class="muted">Doğrudan</span>'}</td>
-          <td data-l="Misafirin Ödediği" class="num"><b>${money(x.paid)}</b>${x.discount ? `<small class="cell-sub"><s>${money(x.list)}</s> · %${PRICING.GUEST} paylaşım ind.</small>` : ''}</td>
-          <td data-l="Otelin Net Kazancı" class="num"><b class="pos">${money(x.net)}</b><small class="cell-sub">${x.creator ? `Elçi ${money(x.creator)} · ` : ''}Platform ${money(x.platform)}</small></td>
+          <td data-l="Konaklama Tutarı" class="num"><b>${money(x.paid)}</b>${x.discount ? `<small class="cell-sub"><s>${money(x.list)}</s> · %${PRICING.GUEST} paylaşım ind.</small>` : ''}</td>
+          <td data-l="Online Ön Ödeme" class="num"><b>${money(x.deposit)}</b><small class="cell-sub">${x.creator ? `Elçi ${money(x.creator)} · ` : ''}Turizmlink ${money(x.platform)}</small></td>
+          <td data-l="Girişte Otel Kasasına" class="num"><b class="pos">${money(x.net)}</b><small class="cell-sub">%${Math.round((x.net / x.list) * 100)} · nakit / POS</small></td>
           <td class="act">${q.status === 'pending'
             ? `<div class="act-btns"><button class="btn btn-success btn-sm" data-action="decide-req" data-id="${q.id}" data-ok="1">${ic('check')} Onayla</button><button class="btn btn-reject btn-sm" data-action="decide-req" data-id="${q.id}" data-ok="0">${ic('x')} Reddet</button></div>`
             : statusChip(q.status)}</td>
@@ -496,7 +503,7 @@
     const list = reqFilter === 'all' ? all : all.filter((q) => q.status === reqFilter);
     const tabs = [['pending', 'Bekleyen'], ['approved', 'Onaylı'], ['rejected', 'Reddedilen'], ['all', 'Tümü']];
     return `
-      <div class="page-head"><div><h1>Gelen Rezervasyon Talepleri</h1><p>Misafire 2 saat içinde onay sözü verildi. Onayladığınızda karttan çekim yapılır ve satış varsa elçinin koduna işlenir.</p></div></div>
+      <div class="page-head"><div><h1>Gelen Rezervasyon Talepleri</h1><p>Misafire 2 saat içinde onay sözü verildi. Onayladığınızda misafirin kartından yalnızca online ön ödeme çekilir; kalan tutarı misafir girişte doğrudan size öder.</p></div></div>
       <div class="pills">${tabs.map(([k, l]) => `<button class="pill ${reqFilter === k ? 'active' : ''}" data-action="req-filter" data-f="${k}">${l} (${k === 'all' ? all.length : count(k)})</button>`).join('')}</div>
       ${list.length ? requestTable(list) : empty('inbox', 'Bu listede talep yok', 'Misafir talepleri geldiğinde burada görünecek.')}`;
   }
@@ -598,16 +605,16 @@
     const rows = payoutRows(biz.id).sort((x, y) => y.list - x.list);
     const t = payoutTotals(rows);
     return `
-      <div class="page-head"><div><h1>Hakediş Raporu</h1><p>Elçi linkleriyle gelen onaylı rezervasyonlar. Tüm oranlar liste fiyatı üzerinden; toplam feragat %${PRICING.TOTAL}.</p></div></div>
+      <div class="page-head"><div><h1>Hakediş Raporu</h1><p>Elçi linkleriyle gelen onaylı rezervasyonlar. Tüm oranlar liste fiyatı üzerinden; toplam maliyet %${PRICING.TOTAL}. Elçi ve Turizmlink payı misafirin online ön ödemesinden karşılanır, sizden ayrıca tahsilat yapılmaz.</p></div></div>
       <div class="payout-sum">
         <div><span>Toplam liste cirosu</span><strong>${money(t.list)}</strong></div>
         <div><span>Paylaşım indirimi (%${PRICING.GUEST})</span><strong class="neg">− ${money(t.guest)}</strong></div>
         <div><span>Tavsiye komisyonu (%${PRICING.CREATOR})</span><strong class="neg">− ${money(t.creator)}</strong></div>
-        <div><span>Platform payı (%${PRICING.PLATFORM})</span><strong class="neg">− ${money(t.platform)}</strong></div>
+        <div><span>Turizmlink payı (%${PRICING.PLATFORM})</span><strong class="neg">− ${money(t.platform)}</strong></div>
         <div class="net"><span>Otele net (%${PRICING.NET})</span><strong>${money(t.net)}</strong></div>
       </div>
       ${rows.length ? `<div class="card table-wrap"><table class="payout-table">
-        <thead><tr><th>Elçi</th><th>Ref Kodu</th><th class="num">Rez.</th><th class="num">Liste cirosu</th><th class="num">İndirim (%${PRICING.GUEST})</th><th class="num">Elçi (%${PRICING.CREATOR})</th><th class="num">Platform (%${PRICING.PLATFORM})</th><th class="num">Otele net (%${PRICING.NET})</th></tr></thead>
+        <thead><tr><th>Elçi</th><th>Ref Kodu</th><th class="num">Rez.</th><th class="num">Liste cirosu</th><th class="num">İndirim (%${PRICING.GUEST})</th><th class="num">Elçi (%${PRICING.CREATOR})</th><th class="num">Turizmlink (%${PRICING.PLATFORM})</th><th class="num">Otele net (%${PRICING.NET})</th></tr></thead>
         <tbody>${rows.map((x) => `<tr><td><b>${esc(x.c.name)}</b><small class="cell-sub">${esc(x.c.handle)}</small></td><td><code class="ref-code">${esc(x.a.code)}</code></td><td class="num">${x.a.sales}</td><td class="num">${money(x.list)}</td><td class="num neg">− ${money(x.guest)}</td><td class="num neg">− ${money(x.creator)}</td><td class="num neg">− ${money(x.platform)}</td><td class="num"><b>${money(x.net)}</b></td></tr>`).join('')}</tbody>
         <tfoot><tr><td colspan="2">Toplam</td><td class="num">${t.sales}</td><td class="num">${money(t.list)}</td><td class="num neg">− ${money(t.guest)}</td><td class="num neg">− ${money(t.creator)}</td><td class="num neg">− ${money(t.platform)}</td><td class="num"><b>${money(t.net)}</b></td></tr></tfoot>
       </table></div>` : empty('chart', 'Henüz hakediş yok', 'Onaylanan ilk rezervasyondan sonra rapor burada oluşur.')}`;
@@ -676,7 +683,7 @@
     const info = form.querySelector('#splitInfo');
     if (!info) return;
     info.innerHTML = `${ic('percent')}<span>${price
-      ? `Rezervasyon başına toplam feragat <b>%${PRICING.TOTAL}: ${money(pct(price, PRICING.TOTAL))}</b> → ${money(pct(price, PRICING.GUEST))} misafir indirimi, ${money(pct(price, PRICING.CREATOR))} elçi, ${money(pct(price, PRICING.PLATFORM))} Turizmlink. Otele net ${money(pct(price, PRICING.NET))}.`
+      ? `Rezervasyon başına toplam feragat <b>%${PRICING.TOTAL}: ${money(pct(price, PRICING.TOTAL))}</b> → ${money(pct(price, PRICING.GUEST))} misafir indirimi, ${money(pct(price, PRICING.CREATOR))} elçi, ${money(pct(price, PRICING.PLATFORM))} Turizmlink. Misafir ${money(pct(price, PRICING.DEPOSIT))} ön ödemeyi online yapar, girişte otele net ${money(pct(price, PRICING.NET))} öder.`
       : `Toplam feragat <b>%${PRICING.TOTAL}</b>: %${PRICING.GUEST} misafir indirimi, %${PRICING.CREATOR} elçi, %${PRICING.PLATFORM} Turizmlink. Fiyat girince tutarlar hesaplanır.`}</span>`;
   }
 

@@ -6,8 +6,8 @@ turizmlink.com · statik HTML/CSS/JS, kurulum gerektirmez.
 
 | Sayfa | Rol | İçerik |
 |---|---|---|
-| `index.html` | Ana vitrin | Hero + 3 büyük yönlendirme butonu, OTA (%15–25) vs Turizmlink (%12) karşılaştırması, 3 adım |
-| `extranet.html` | Otelci | Sol menü: Dashboard, Gelen Rezervasyon Talepleri (Onayla/Reddet), Takvim/Fiyat, Hakediş Raporu (%5 / %5 / %2 / %88) + elçi başvuruları; dashboard'da 10.000 ₺ örnekli net matematik kartı |
+| `index.html` | Ana vitrin | Hero + 3 büyük yönlendirme butonu, OTA (%15–25) vs Turizmlink (%15) karşılaştırması, 3 adım |
+| `extranet.html` | Otelci | Sol menü: Dashboard, Gelen Rezervasyon Talepleri (Onayla/Reddet), Takvim/Fiyat, Hakediş Raporu (%5 / %5 / %5 / %85) + elçi başvuruları; dashboard'da 10.000 ₺ örnekli net matematik kartı |
 | `app.html` | Elçi / içerik üreticisi | Panel (3 adım, referans linki, yönlendirilen misafir, %5 nakit bakiye), Oteller, Başvurular, Medya Kiti (9:16 indirilebilir görseller), Cüzdan |
 | `hotel.html?ref=KOD` | Misafir | "%5 Paylaşım İndiriminiz Hazır! 🎁" bandı, Liste / Paylaşım indirimi / Ödenecek net özeti, paylaşım onay kutusu, takvim, 2 saat onay penceresi, teşekkür mesajı |
 
@@ -20,10 +20,12 @@ python3 -m http.server 5173
 
 ## Gelir modeli (`js/data.js` → `PRICING`)
 
-Tüm oranlar **liste fiyatı** üzerinden; toplam feragat **%12**, otele **net %88**:
+Tüm oranlar **liste fiyatı** üzerinden; toplam feragat **%15**, otele **net %85**:
 - **%5 Paylaşım indirimi** → misafire (oteli etiketleyerek paylaşma jestini onaylarsa; organik içerik/UGC).
 - **%5 Tavsiye komisyonu** → linkle satışı getiren elçiye (link yoksa bu maliyet yok).
-- **%2 Platform payı** → Turizmlink (rezervasyon + link takip altyapısı).
+- **%5 Platform payı** → Turizmlink (ön ödeme, link takibi ve kanal altyapısı).
+
+Tahsilat: elçi + platform payı (%10) rezervasyonda online ön ödeme olarak alınır; kalan %85 misafir tarafından check-in'de doğrudan otele ödenir.
 
 ## Akış
 
