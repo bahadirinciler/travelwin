@@ -1,5 +1,5 @@
 /* Turizmlink — misafir rezervasyon sayfası (hotel.html)
-   %5 Paylaşım İndirimi: misafir, otelde geçirdiği anları oteli etiketleyerek paylaşma jestini onaylarsa liste fiyatından %5 düşer.
+   %5 Paylaşım İndirimi: misafir (linkle gelsin gelmesin), otelde kısa bir video çekip oteli etiketleyerek paylaşma jestini onaylarsa liste fiyatından %5 düşer.
    ?ref=KOD → elçi linki: tıklama kaydı + satış elçinin koduna işlenir (%5 tavsiye komisyonu). ?h=b5 → doğrudan otel.
    Misafir tarih seçip talep bırakır; otel extranet'ten onaylar. */
 (function () {
@@ -69,7 +69,7 @@
   /* ---------- Paylaşım indirimi bandı ---------- */
   $band.innerHTML = `<div class="lwrap disc-in">
       <div class="disc-txt"><b class="disc-title">%${PRICING.GUEST} Paylaşım İndiriminiz Hazır! 🎁</b>
-        <span>Bu indirim, güzel anlarınızı sevdiklerinizle paylaşacağınız tatlı bir tatil jesti. Konaklamanız sırasında otelden bir hikaye veya kare paylaştığınızda bu özel fiyat doğrudan sizin oluyor.</span>
+        <span>Bu indirim, ister bir tavsiyeyle ister kendiniz gelin, tüm misafirlerimize hazırladığımız küçük bir tatil hediyesi. Karşılığında sizden tek ricamız: konaklamanız sırasında otelimizde kısa bir video çekip oteli etiketleyerek paylaşmanız. Anılarınız sizin, teşekkürümüz bu özel fiyat.</span>
         ${hasRef ? `<small class="disc-ref">✨ ${esc(genitive(creator.name))} tavsiyesiyle ${esc(locativeYou(biz.name))} · <code>${esc(code)}</code></small>` : ''}</div>
     </div>`;
   $band.hidden = false;
@@ -269,7 +269,7 @@
               <div class="field full"><label for="g-phone">Telefon</label><input class="input" id="g-phone" name="phone" type="tel" autocomplete="tel" required placeholder="05xx xxx xx xx" /></div>
               <div class="field full"><label for="g-name">Ad soyad</label><input class="input" id="g-name" name="guestName" autocomplete="name" required placeholder="Adınız ve soyadınız" /></div>
             </div>
-            <label class="share-check"><input type="checkbox" id="g-share" ${st.share ? 'checked' : ''} /><span>Otelde geçirdiğim keyifli anları sosyal medyada oteli etiketleyerek paylaşmaktan mutluluk duyarım. <b>%${PRICING.GUEST} indirimli fiyatımı onayla.</b></span></label>
+            <label class="share-check"><input type="checkbox" id="g-share" ${st.share ? 'checked' : ''} /><span>Konaklamam sırasında otelde kısa bir video çekip oteli etiketleyerek sosyal medyada paylaşmaktan mutluluk duyarım. <b>%${PRICING.GUEST} indirimli fiyatımı onayla.</b></span></label>
             <button class="btn btn-accent btn-block btn-book" type="submit">${ic('lock')} <span class="book-label">Ön Ödeme ile Yerini Ayırt</span></button>
             <p class="gh-note">${ic('shield')} Şimdi ödeme alınmaz. Kartınızdan çekim, otel talebinizi onayladıktan sonra yapılır.</p>
           </form>
@@ -435,7 +435,7 @@
         <p>${esc(biz.name)} · ${esc(room().name)}<br>${fmtLong(req.checkIn)} → ${fmtLong(req.checkOut)} · ${req.nights} gece</p>
         <div class="gh-done-total">${money(req.total)}${req.discount ? `<small>${money(req.discount)} paylaşım indirimi dahil</small>` : ''}</div>
         ${payHtml(req)}
-        ${req.discount ? `<p class="done-msg"><b>İndiriminiz onaylandı.</b> Check-in yaptığınızda size özel bir referans linki de aktifleşecek. Tatilinizden paylaşacağınız kareleri görüp otelimizi ziyaret eden her arkadaşınız için <b>%${PRICING.CREATOR} nakit teşekkür payı</b> doğrudan hesabınıza yatacak. Hem paylaştıkça indirimli kaldınız, hem de sevdiklerinize tatil önererek kazanabilirsiniz.</p>` : ''}
+        ${req.discount ? `<p class="done-msg"><b>İndiriminiz onaylandı.</b> Check-in yaptığınızda size özel bir referans linki de aktifleşecek. Tatilinizden paylaşacağınız videoyu görüp otelimizi ziyaret eden her arkadaşınız için <b>%${PRICING.CREATOR} nakit teşekkür payı</b> doğrudan hesabınıza yatacak. Hem paylaştıkça indirimli kaldınız, hem de sevdiklerinize tatil önererek kazanabilirsiniz.</p>` : ''}
         <div class="cf-policy">${ic('clock')}<p>Otelimiz talebinizi <b>2 saat içinde</b> onaylayacak; onay sonrası kartınızdan <b>${money(req.deposit)} ön ödeme</b> çekilecek ve <b>${esc(req.phone)}</b> numarasına bilgi verilecek. Kalan <b>${money(req.atHotel)}</b> girişte otele ödenir.</p></div>
         <a class="btn btn-ghost btn-block" href="app.html">${ic('sparkles')} Elçi panelini şimdiden keşfedin ${ic('arrow')}</a>
       </div>`;
