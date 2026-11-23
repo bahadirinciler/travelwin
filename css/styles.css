@@ -1433,3 +1433,11 @@ h1, h2, h3, .mlogo, .f-chip b, .f-op, .steps-strip b, .ss-n, .mbiz-nums strong, 
 .sc-gain b { font-family: var(--serif); font-size: 17px; font-variant-numeric: lining-nums; }
 .sc-skip { align-self: center; border: 0; background: none; padding: 6px 8px; font: inherit; font-size: 13px; font-weight: 600; color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .sc-skip:hover { color: var(--ink); }
+
+/* v13.2 — otelciler: misafir reklamı vurgusu */
+.mbiz-hl { display: flex; gap: 12px; align-items: flex-start; margin: 0 0 26px; padding: 16px 18px; border-radius: 18px; background: rgba(217,107,67,.14); border: 1px solid rgba(247,180,143,.32); }
+.mbiz-hl svg { flex-shrink: 0; width: 20px; height: 20px; margin-top: 3px; color: #f7b48f; }
+.mbiz .mbiz-hl p { margin: 0; font-size: 15px; line-height: 1.6; color: rgba(255,255,255,.82); }
+.mbiz .mbiz-hl b { color: #f7b48f; font-weight: 700; }
+.mbiz-nums strong { white-space: nowrap; }
+@media (max-width: 640px) { .mbiz-nums small { font-size: 12.5px; } .mbiz-nums strong.strike { font-size: .82em; } }
