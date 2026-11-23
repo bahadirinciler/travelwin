@@ -239,7 +239,7 @@
       </div>
       <form class="card card-pad elci-q" id="elciForm" novalidate>
         <label for="elci-code"><b>Kodunla kazancını sorgula</b><small>Ref kodunu yaz; o koddan gelen rezervasyon sayısını ve %${PRICING.CREATOR} brüt kazancını canlı gör.</small></label>
-        <div class="lg-row"><input class="input" id="elci-code" placeholder="Örn. ${esc(codes[0] || 'AYSE-DATCA')}" value="${esc(lk?.kod || '')}" autocomplete="off" /><button class="btn btn-primary" type="submit">Sorgula</button></div>
+        <div class="lg-row"><input class="input" id="elci-code" placeholder="Örn. ${esc(codes[0] || 'AYSE-DATCA')}" value="${esc(lk?.kod || myCode())}" autocomplete="off" /><button class="btn btn-primary" type="submit">Sorgula</button></div>
         ${elci.lookupErr ? `<p class="lg-err">${esc(elci.lookupErr)}</p>` : ''}
         ${lk ? `<div class="elci-res"><span><code class="ref-code">${esc(lk.kod)}</code></span><span>Referans <b>${num.format(sumBy(lk.rows, 'toplam'))}</b></span><span>Onaylı <b>${num.format(sumBy(lk.rows, 'onayli'))}</b></span><span>Brüt kazanç <b>${money(sumBy(lk.rows, 'brut_kazanc'))}</b></span>${sumBy(lk.rows, 'bekleyen_kazanc') ? `<span>Onay bekleyen <b>+${money(sumBy(lk.rows, 'bekleyen_kazanc'))}</b></span>` : ''}</div>` : ''}
       </form>
@@ -461,6 +461,8 @@
 
   /* ---- Elçi: canlı kazanç özeti ---- */
   const elci = { key: null, rows: null, err: '', lookup: null, lookupErr: '' };
+  // Rezervasyon sonrası misafire üretilen kişisel elçi kodu (bu cihazda hatırlanır)
+  const myCode = () => { try { return JSON.parse(localStorage.getItem('turizmlink:mycode') || 'null')?.code || ''; } catch (e) { return ''; } };
   const sumBy = (rows, k) => (rows || []).reduce((n, r) => n + (+r[k] || 0), 0);
   async function loadElci(codes) {
     elci.key = codes.join('|');

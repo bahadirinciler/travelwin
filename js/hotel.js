@@ -380,7 +380,7 @@
   let pending = null; // { name, phone, guests, quote }
   function openModal(html) {
     $modalCard.innerHTML = html;
-    $modalCard.classList.remove('modal-photo');
+    $modalCard.classList.remove('modal-photo', 'modal-wide');
     $modal.hidden = false;
     document.body.style.overflow = 'hidden';
     $modalCard.querySelector('input, button:not(.modal-close)')?.focus({ preventScroll: true });
@@ -430,6 +430,104 @@
       </form>`;
   }
 
+  /* ---------- Paylaşım & kazanç kartı (rezervasyon sonrası) ---------- */
+  async function copyText(text) {
+    try { await navigator.clipboard.writeText(text); return true; } catch (e) {
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      let ok = false; try { ok = document.execCommand('copy'); } catch (_) { /* yoksay */ }
+      ta.remove(); return ok;
+    }
+  }
+  const storyMedia = biz.media || [];
+  const storyPhoto = (id, i) => storyMedia.find((m) => m.id === id)?.src || storyMedia[i]?.src || biz.cover;
+  const bizProvince = (biz.address || '').split('/').pop().trim();
+  let share = null; // { code, link, text, tpl, canvases, blobs }
+
+  function shareHtml(sh) {
+    return `
+      <section class="sc" aria-labelledby="scTitle">
+        <span class="sc-kicker">${ic('gift')} 1. Kazanç Adımı · Paylaşım kartın hazır</span>
+        <h3 id="scTitle">Bekle bizi, ${esc(biz.name)}! Şimdi sevdiklerine haber ver.</h3>
+        <p class="sc-sub">Bu senin kişisel davet linkin. Linkinle gelen arkadaşların anında %${PRICING.GUEST} indirim kazanır; sen de onların konaklamasından %${PRICING.CREATOR} nakit kazanırsın.</p>
+        <div class="sc-link">
+          <input class="input" readonly value="${esc(sh.link)}" aria-label="Kişisel davet linkin" />
+          <button type="button" class="mbtn mbtn-ink" data-sc="copy">${ic('copy')} Linki Kopyala</button>
+        </div>
+        <div class="sc-cards" role="radiogroup" aria-label="Hikâye kartı şablonu">
+          ${TLStory.TEMPLATES.map((t) => `
+            <button type="button" role="radio" aria-checked="${t.id === sh.tpl}" class="sc-card${t.id === sh.tpl ? ' on' : ''}" data-sc="pick" data-tpl="${t.id}">
+              <span class="sc-frame" data-frame="${t.id}"><span class="sc-wait">Hazırlanıyor…</span></span>
+              <span class="sc-lbl">${t.label}</span>
+            </button>`).join('')}
+        </div>
+        <div class="sc-actions">
+          <button type="button" class="mbtn mbtn-cta" data-sc="download">${ic('download')} Hikâye Görselini İndir</button>
+          <button type="button" class="mbtn mbtn-line" data-sc="share">${ic('send')} WhatsApp / Instagram'da Paylaş</button>
+        </div>
+        <div class="sc-step2">${ic('sparkles')}<p><b>2. Kazanç Adımı:</b> Otele giriş yaptığınızda kendi çektiğiniz fotoğraf veya videoyu bu linkle paylaştığınızda, linkinizden gelen her arkadaşınızdan %${PRICING.CREATOR} nakit komisyon kazanır; biriken bakiyenizle sonraki tatilinizi %100 bedavaya getirebilirsiniz.</p></div>
+      </section>`;
+  }
+
+  async function mountShare() {
+    if (!share || !window.TLStory) return;
+    const d = {
+      name: biz.name, region: biz.region || '', link: share.link,
+      location: [biz.region, bizProvince && bizProvince !== biz.region ? bizProvince : ''].filter(Boolean).join(', '),
+      photos: { klasik: storyPhoto('villa-aksam', 0), rota: storyPhoto('drone', 1), minimal: storyPhoto('yesil-kapi', 2) },
+    };
+    const sh = share;
+    for (const t of TLStory.TEMPLATES) {
+      try {
+        const cv = await TLStory.render(t.id, d);
+        if (share !== sh) return;
+        sh.canvases[t.id] = cv;
+        const fr = $modalCard.querySelector(`[data-frame="${t.id}"]`);
+        if (fr) { fr.innerHTML = ''; fr.appendChild(cv); }
+        sh.blobs[t.id] = TLStory.toBlob(cv);
+      } catch (e) { console.error('Hikâye kartı:', e); }
+    }
+  }
+
+  $modalCard.addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-sc]');
+    if (!b || !share) return;
+    const fileName = `bekle-bizi-${TLStory.slug(biz.name)}-${share.tpl}.png`;
+    switch (b.dataset.sc) {
+      case 'copy':
+        toast((await copyText(share.link)) ? 'Davet linkin kopyalandı' : 'Linki basılı tutup kopyalayabilirsin.');
+        break;
+      case 'pick':
+        share.tpl = b.dataset.tpl;
+        $modalCard.querySelectorAll('.sc-card').forEach((c) => { const on = c === b; c.classList.toggle('on', on); c.setAttribute('aria-checked', on); });
+        break;
+      case 'download': {
+        const blob = await share.blobs[share.tpl];
+        if (!blob) { toast('Görsel hazırlanıyor, bir saniye sonra tekrar deneyin.'); return; }
+        const url = URL.createObjectURL(blob);
+        const a = Object.assign(document.createElement('a'), { href: url, download: fileName });
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
+        toast('Hikâye görselin indirildi');
+        break;
+      }
+      case 'share': {
+        const blob = await share.blobs[share.tpl];
+        const file = blob && typeof File === 'function' ? new File([blob], fileName, { type: 'image/png' }) : null;
+        try {
+          if (file && navigator.canShare?.({ files: [file] })) await navigator.share({ files: [file], text: share.text });
+          else if (navigator.share) await navigator.share({ text: share.text });
+          else throw new Error('paylaşım menüsü yok');
+        } catch (err) {
+          if (err?.name === 'AbortError') return;
+          toast((await copyText(share.text)) ? 'Paylaşım metni kopyalandı; WhatsApp veya Instagram\'a yapıştırabilirsin.' : 'Paylaşım şu an açılamadı.');
+        }
+        break;
+      }
+    }
+  });
+
   function doneHtml(req) {
     return `
       <div class="modal-body done-body">
@@ -439,9 +537,9 @@
         <p>${esc(biz.name)} · ${esc(room().name)}<br>${fmtLong(req.checkIn)} → ${fmtLong(req.checkOut)} · ${req.nights} gece</p>
         <div class="gh-done-total">${money(req.total)}${req.discount ? `<small>${money(req.discount)} paylaşım indirimi dahil</small>` : ''}</div>
         ${payHtml(req)}
-        ${req.discount ? `<p class="done-msg"><b>İndiriminiz onaylandı.</b> Check-in yaptığınızda size özel bir referans linki de aktifleşecek. Tatilinizden paylaşacağınız videoyu görüp otelimizi ziyaret eden her arkadaşınız için <b>%${PRICING.CREATOR} nakit teşekkür payı</b> doğrudan hesabınıza yatacak. Hem paylaştıkça indirimli kaldınız, hem de sevdiklerinize tatil önererek kazanabilirsiniz.</p>` : ''}
         <div class="cf-policy">${ic('clock')}<p>Otelimiz talebinizi <b>2 saat içinde</b> onaylayacak; onay sonrası kartınızdan <b>${money(req.deposit)} ön ödeme</b> çekilecek ve <b>${esc(req.phone)}</b> numarasına bilgi verilecek. Kalan <b>${money(req.atHotel)}</b> girişte otele ödenir.</p></div>
-        <a class="btn btn-ghost btn-block" href="app.html">${ic('sparkles')} Elçi panelini şimdiden keşfedin ${ic('arrow')}</a>
+        ${share ? shareHtml(share) : ''}
+        <a class="btn btn-ghost btn-block" href="app.html">${ic('sparkles')} Kazancını elçi panelinden takip et ${ic('arrow')}</a>
       </div>`;
   }
 
@@ -515,7 +613,19 @@
       list: q.list, discount: q.discount, total: q.total, deposit: q.deposit, atHotel: q.atHotel, share: st.share,
     });
     pending = null;
+    // Misafirin kişisel elçi linki (ad soyad + e-postadan, her seferinde aynı)
+    if (window.TLStory) {
+      const myCode = TLStory.codeFor(name, email);
+      const link = `https://turizmlink.com/?ref=${myCode}`;
+      share = {
+        code: myCode, link, tpl: 'klasik', canvases: {}, blobs: {},
+        text: `Bekle bizi ${biz.name}! 🌿 Turizmlink üzerinden yerimizi ayırttık. Sen de benim davet linkimle rezervasyon yaparsan anında %${PRICING.GUEST} indirim kazanıyorsun: ${link}`,
+      };
+      try { localStorage.setItem('turizmlink:mycode', JSON.stringify({ code: myCode, at: Date.now() })); } catch (e) { /* yoksay */ }
+    }
     $modalCard.innerHTML = doneHtml(req);
+    $modalCard.classList.add('modal-wide');
+    mountShare();
     const form = document.getElementById('reqForm');
     if (form) form.outerHTML = `
       <div class="card card-pad gh-done">
