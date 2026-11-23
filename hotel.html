@@ -3,27 +3,32 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0f172a" />
+  <meta name="theme-color" content="#FAF8F5" />
   <meta name="robots" content="noindex, nofollow, noarchive" />
   <meta name="googlebot" content="noindex, nofollow" />
   <script src="js/gate.js"></script>
   <title>Casa Di Datça — Rezervasyon · Turizmlink</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="css/styles.css" />
 </head>
-<body class="guest">
+<body class="guest med">
   <!-- Tebrik bandı: ?ref= ile gelindiyse elçi adı + %5 Misafir İndirimi -->
   <div class="disc-band" id="discBand" hidden></div>
 
-  <header class="gnav">
-    <div class="lwrap gnav-in">
-      <span class="gnav-hotel" id="gHotelName">Casa Di Datça</span>
-      <a class="gnav-by" href="index.html" aria-label="Turizmlink ana sayfa"><span class="brand-mark sm">₺</span> Turizmlink ile güvenli ön talep</a>
+  <header class="mnav mnav-solid">
+    <div class="lwrap mnav-in">
+      <a class="mlogo" href="index.html" aria-label="Turizmlink ana sayfa">Turizmlink</a>
+      <nav class="mnav-links" aria-label="Ana menü">
+        <a href="index.html#oteller">Butik Oteller</a>
+        <a href="app.html">Elçi Programı</a>
+        <a href="extranet.html" class="mnav-cta">Otel Paneli</a>
+      </nav>
     </div>
   </header>
+  <nav class="lwrap mcrumb" aria-label="Konum"><a href="index.html#oteller">Butik Oteller</a> <span aria-hidden="true">/</span> <span id="gHotelName">Casa Di Datça</span></nav>
 
   <main class="lwrap ghotel" id="hotel"></main>
 

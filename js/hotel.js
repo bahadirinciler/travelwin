@@ -47,11 +47,12 @@
 
   /* ---------- Hangi otel, hangi elçi? ---------- */
   const params = new URLSearchParams(location.search);
-  const code = (params.get('ref') || '').trim();
+  const code = DB.activeRef(); // URL ?ref= veya hafızadaki elçi kodu (30 gün)
   const app = code ? DB.byCode(code) : null;
   const refOffer = app ? DB.offer(app.offerId) : null;
-  const biz = DB.business(refOffer?.businessId || params.get('h') || 'b5') || DB.business('b5');
-  const offer = refOffer || DB.offers({ businessId: biz.id, activeOnly: true })[0] || null;
+  // Linkte otel (?h=) varsa o açılır; elçi kodu tüm otellerde geçerlidir.
+  const biz = DB.business(params.get('h') || refOffer?.businessId || 'b5') || DB.business('b5');
+  const offer = (refOffer && refOffer.businessId === biz.id ? refOffer : null) || DB.offers({ businessId: biz.id, activeOnly: true })[0] || null;
   const creator = app ? DB.creator(app.creatorId) : null;
   const hasRef = !!app;
   // URL'de geçerli biçimde bir ?ref= kodu varsa (demo listesinde olmasa da) elçi payı ve %10 ön ödeme uygulanır.

@@ -422,6 +422,20 @@
       return { list: q.list, discount: q.discount || 0, paid: q.total, creator, platform, deposit, net: q.total - deposit };
     },
 
+    /** Aktif elçi kodu: URL'deki ?ref= (görülünce 30 gün hatırlanır) yoksa hafızadaki kod.
+        Biçimi geçersiz kodlar yok sayılır. Ana sayfa ve otel sayfası aynı kodu kullanır. */
+    activeRef() {
+      const KEY = 'turizmlink:ref', TTL = 30 * 86400000;
+      const ok = (c) => /^[A-Za-z0-9ÇĞİÖŞÜçğıöşü-]{3,20}$/.test(c || '');
+      const fromUrl = (new URLSearchParams(location.search).get('ref') || '').trim();
+      try {
+        if (ok(fromUrl)) { localStorage.setItem(KEY, JSON.stringify({ code: fromUrl, at: Date.now() })); return fromUrl; }
+        const s = JSON.parse(localStorage.getItem(KEY) || 'null');
+        if (s && ok(s.code) && Date.now() - s.at < TTL) return s.code;
+      } catch (e) { if (ok(fromUrl)) return fromUrl; }
+      return '';
+    },
+
     /** Elçi linki: misafiri otelin rezervasyon sayfasına (hotel.html) kodla götürür. */
     affiliateUrl(code) {
       return new URL(`hotel.html?ref=${encodeURIComponent(code)}`, location.href).href;

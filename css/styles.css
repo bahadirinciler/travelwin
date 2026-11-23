@@ -1,45 +1,52 @@
 /* ============ Turizmlink — Tasarım sistemi ============
-   Palet: koyu lacivert #0F172A (ana), zümrüt #10B981 (aksan), beyaz/gri zeminler.
-   Not: --gold* değişkenleri geriye uyum için duruyor ve zümrüt tonlarına eşlenmiştir. */
+   v12 "Akdeniz": sıcak keten zemin #FAF8F5, beyaz kartlar, derin Ege laciverti #1E2D2F (metin/güven),
+   terakota #D96B43 (ana aksiyon), zeytin yeşili (olumlu tutarlar). Başlıklar Playfair Display, metin Plus Jakarta Sans.
+   Not: --gold* / --emerald* adları geriye uyum için duruyor; yeni palete eşlenmiştir. */
 :root {
-  --bg: #f8fafc;
+  --bg: #faf8f5;
   --surface: #ffffff;
-  --surface-2: #f1f5f9;
-  --ink: #0f172a;
-  --ink-2: #475569;
-  --ink-3: #64748b;
-  --line: #e2e8f0;
+  --surface-2: #f3eee7;
+  --ink: #1e2d2f;
+  --ink-2: #55605f;
+  --ink-3: #7b8482;
+  --line: #e9e2d8;
 
-  --navy: #0f172a;
-  --navy-2: #1e293b;
-  --navy-3: #020617;
-  --navy-soft: #e2e8f0;
+  --navy: #1e2d2f;
+  --navy-2: #2c3f42;
+  --navy-3: #142022;
+  --navy-soft: #e7e3dc;
 
-  --gold: #10b981;
-  --gold-2: #34d399;
-  --gold-soft: #ecfdf5;
-  --gold-ink: #047857;
+  --terra: #d96b43;
+  --terra-2: #c35a34;
+  --terra-soft: #fbede5;
+  --sand: #f3ece2;
+  --serif: "Playfair Display", Georgia, "Times New Roman", serif;
 
-  --emerald: #10b981;
-  --emerald-2: #059669;
-  --emerald-3: #34d399;
-  --emerald-soft: #d1fae5;
+  --gold: #d96b43;
+  --gold-2: #e58a62;
+  --gold-soft: #fbede5;
+  --gold-ink: #a9482a;
+
+  --emerald: #4f7f6a;
+  --emerald-2: #3e6857;
+  --emerald-3: #9cc3b0;
+  --emerald-soft: #e4efe8;
 
   --primary: var(--navy);
   --primary-ink: #ffffff;
   --primary-soft: var(--navy-soft);
-  --accent: var(--gold);
-  --accent-soft: var(--gold-soft);
-  --success: #1f8a5b;
-  --success-soft: #e3f3ea;
+  --accent: var(--terra);
+  --accent-soft: var(--terra-soft);
+  --success: #3e7a5e;
+  --success-soft: #e6f0ea;
   --danger: #c4453b;
   --danger-soft: #fbe6e4;
   --warn: #a8701a;
   --warn-soft: #fbf1dc;
 
   --radius: 20px;
-  --shadow: 0 1px 2px rgba(15,23,42, .04), 0 12px 32px -16px rgba(15,23,42, .2);
-  --shadow-lg: 0 1px 2px rgba(15,23,42, .04), 0 28px 60px -22px rgba(15,23,42, .32);
+  --shadow: 0 1px 2px rgba(30,45,47,.04), 0 14px 34px -18px rgba(30,45,47,.22);
+  --shadow-lg: 0 1px 2px rgba(30,45,47,.04), 0 30px 64px -24px rgba(30,45,47,.34);
   --topbar-h: 64px;
   --bottomnav-h: 64px;
   font-family: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -560,7 +567,7 @@ body.landing { background: var(--bg); }
 /* =====================================================================
    MİSAFİR REZERVASYON SAYFASI (hotel.html)
    ===================================================================== */
-body.guest { background: #f8fafc; }
+body.guest { background: var(--bg); }
 .disc-band {
   position: relative; overflow: hidden; font-size: 14.5px; color: #fff;
   background:
@@ -1167,3 +1174,165 @@ td.neg, .payout-sum .neg { color: #dc2626; }
 .elci-q { margin-top: 16px; }
 .elci-res { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 10px 12px; border-radius: 12px; background: var(--success-soft); font-size: 13.5px; }
 .elci-res b { font-variant-numeric: tabular-nums; }
+
+/* =====================================================================
+   v12 — Akdeniz butik otel kürasyonu (ana sayfa + otel sayfası + ortak)
+   ===================================================================== */
+h1, h2 { font-family: var(--serif); font-weight: 600; letter-spacing: -.005em; }
+.btn-accent { background: var(--terra); color: #fff; box-shadow: 0 10px 24px -12px rgba(217,107,67,.7); }
+.btn-accent:hover { background: var(--terra-2); filter: none; }
+.brand-mark { border-color: var(--terra) !important; color: var(--terra) !important; }
+.brand-name b { color: var(--terra); }
+
+/* ---- Üst menü ---- */
+.mnav { position: sticky; top: 0; z-index: 40; padding-top: env(safe-area-inset-top, 0px); transition: background .25s, box-shadow .25s, color .25s; color: var(--ink); }
+.mnav-over { position: fixed; inset-inline: 0; color: #fff; }
+.mnav-solid { background: rgba(250,248,245,.92); backdrop-filter: saturate(1.4) blur(12px); -webkit-backdrop-filter: saturate(1.4) blur(12px); color: var(--ink); box-shadow: 0 1px 0 var(--line); }
+.mnav-in { height: 72px; display: flex; align-items: center; gap: 24px; }
+.mlogo { font-family: var(--serif); font-size: 27px; font-weight: 600; letter-spacing: -.01em; color: inherit; }
+.mnav-links { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+.mnav-links a { color: inherit; font-size: 14.5px; font-weight: 600; padding: 9px 14px; border-radius: 999px; opacity: .88; transition: opacity .15s, background .15s; }
+.mnav-links a:hover { opacity: 1; background: rgba(127,127,127,.12); }
+.mnav-links a.mnav-cta { border: 1px solid currentColor; opacity: 1; }
+.mcrumb { padding-top: 16px; font-size: 13px; color: var(--ink-3); }
+.mcrumb a { color: var(--ink-2); }
+.mcrumb a:hover { color: var(--terra); }
+
+/* ---- Düğmeler ---- */
+.mbtn { display: inline-flex; align-items: center; gap: 8px; padding: 14px 24px; border-radius: 999px; font-weight: 700; font-size: 15px; border: 1px solid transparent; cursor: pointer; transition: background .15s, transform .15s, box-shadow .15s; white-space: nowrap; }
+.mbtn svg { width: 17px; height: 17px; }
+.mbtn:active { transform: translateY(1px); }
+.mbtn-cta { background: var(--terra); color: #fff; box-shadow: 0 14px 30px -14px rgba(217,107,67,.85); }
+.mbtn-cta:hover { background: var(--terra-2); }
+.mbtn-dark { background: #fff; color: var(--ink); }
+.mbtn-dark:hover { background: var(--sand); }
+.mbtn-ghost { background: #fff; color: var(--ink); border-color: var(--line); padding: 10px 18px; font-size: 14px; }
+.mbtn-ghost:hover { border-color: var(--terra); color: var(--terra); }
+
+/* ---- Sinematik açılış ---- */
+.mhero { position: relative; min-height: min(88vh, 780px); display: flex; align-items: flex-end; overflow: hidden; background: #2c3f42; }
+.mhero-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 60% 55%; }
+.mhero-shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(20,32,34,.55) 0%, rgba(20,32,34,0) 26%, rgba(20,32,34,0) 42%, rgba(20,32,34,.72) 100%); }
+.mhero-in { position: relative; width: 100%; padding-top: 120px; padding-bottom: clamp(84px, 11vw, 120px); color: #fff; }
+.mhero-kicker { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; opacity: .9; margin-bottom: 14px; }
+.mhero h1 { font-size: clamp(38px, 6.2vw, 76px); line-height: 1.04; max-width: 14ch; text-shadow: 0 2px 24px rgba(0,0,0,.25); }
+.mhero p { margin: 18px 0 28px; font-size: clamp(16px, 1.6vw, 19px); line-height: 1.55; max-width: 46ch; opacity: .94; }
+
+/* ---- Bölge filtresi ---- */
+.regions { position: relative; z-index: 3; margin: -32px auto 0; display: flex; gap: 6px; width: fit-content; max-width: 100%; overflow-x: auto; padding: 8px; background: #fff; border-radius: 999px; box-shadow: 0 18px 40px -20px rgba(30,45,47,.45), 0 0 0 1px rgba(30,45,47,.04); scrollbar-width: none; }
+.regions::-webkit-scrollbar { display: none; }
+.region { flex: none; border: 0; background: transparent; color: var(--ink-2); font-weight: 600; font-size: 14.5px; padding: 11px 20px; border-radius: 999px; cursor: pointer; transition: background .15s, color .15s; }
+.region:hover { color: var(--ink); background: var(--sand); }
+.region.active { background: var(--ink); color: #fff; }
+
+/* ---- Elçi şeridi ---- */
+.amb { display: flex; align-items: center; gap: 14px; margin: 26px auto 0; max-width: 860px; padding: 14px 18px; border-radius: 18px; background: linear-gradient(135deg, #f8eedb, #f1e1c3); border: 1px solid #e6d2ab; color: #5c4622; }
+.amb p { margin: 0; font-size: 14.5px; line-height: 1.5; }
+.amb b { color: #3f2f14; }
+.amb code { padding: 2px 8px; border-radius: 6px; background: rgba(255,255,255,.65); font-weight: 700; font-size: 12.5px; }
+.amb-ico { display: grid; place-items: center; width: 40px; height: 40px; flex: none; border-radius: 50%; background: rgba(255,255,255,.7); color: #b07a2a; }
+.amb-ico svg { width: 19px; height: 19px; }
+.amb-invite { background: #fff; border-color: var(--line); color: var(--ink-2); }
+.amb-invite b { color: var(--ink); }
+.amb-invite .amb-ico { background: var(--terra-soft); color: var(--terra); }
+.amb-invite .mbtn { margin-left: auto; }
+
+/* ---- Bölümler ---- */
+.msec { padding-block: clamp(52px, 7vw, 92px); }
+.msec-sand { background: var(--sand); }
+.msec-head { margin-bottom: clamp(24px, 3.4vw, 40px); }
+.msec-head h2 { font-size: clamp(30px, 4vw, 46px); line-height: 1.1; }
+.msec-head p { margin: 10px 0 0; color: var(--ink-2); font-size: 16px; }
+.msec-head.center { text-align: center; }
+.mkicker { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: #f0a47f; margin-bottom: 12px; }
+
+/* ---- Otel kartları ---- */
+.hgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); gap: clamp(20px, 2.6vw, 32px); }
+.hcard { display: flex; flex-direction: column; background: #fff; border-radius: 24px; overflow: hidden; color: var(--ink); box-shadow: 0 1px 2px rgba(30,45,47,.05), 0 20px 44px -30px rgba(30,45,47,.5); transition: transform .35s ease, box-shadow .35s ease; }
+a.hcard:hover { transform: translateY(-4px); box-shadow: 0 1px 2px rgba(30,45,47,.05), 0 30px 60px -30px rgba(30,45,47,.55); }
+.hcard-media { position: relative; aspect-ratio: 25 / 27; overflow: hidden; background: var(--sand); }
+.hcard-media img { width: 100%; height: 100%; object-fit: cover; transition: transform 1.1s cubic-bezier(.2,.7,.2,1); }
+a.hcard:hover .hcard-media img { transform: scale(1.06); }
+.hcard-badge { position: absolute; top: 14px; left: 14px; padding: 7px 13px; border-radius: 999px; background: rgba(255,255,255,.94); color: var(--ink); font-size: 12.5px; font-weight: 700; box-shadow: 0 6px 16px -8px rgba(0,0,0,.35); }
+.hcard-badge::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--terra); margin-right: 7px; vertical-align: 1px; }
+.hcard-badge.soon { background: rgba(30,45,47,.78); color: #fff; backdrop-filter: blur(6px); }
+.hcard-badge.soon::before { background: #f0c27a; }
+.hcard-body { padding: 18px 20px 20px; }
+.hcard-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.hcard h3 { font-family: var(--serif); font-size: 22px; font-weight: 600; line-height: 1.2; }
+.hcard-loc { display: inline-flex; align-items: center; gap: 4px; flex: none; color: var(--ink-3); font-size: 13px; font-weight: 600; }
+.hcard-loc svg { width: 14px; height: 14px; }
+.hcard-tags { margin: 6px 0 12px; font-size: 13.5px; color: var(--ink-2); }
+.hcard-tags span { color: var(--terra); margin-inline: 3px; }
+.hcard-price { margin: 0; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.hcard-price s { color: var(--ink-3); font-size: 14px; }
+.hcard-price b { font-size: 20px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+.hcard-price small { color: var(--ink-3); font-size: 13px; }
+.hcard-price.soon { font-family: var(--serif); font-style: italic; color: var(--ink-3); font-size: 15px; }
+.hcard.is-soon .hcard-media img { filter: saturate(.92); }
+
+/* ---- Nasıl çalışır (misafir) ---- */
+.mhow { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(16px, 2.4vw, 28px); }
+.mhow li { background: #fff; border-radius: 22px; padding: 28px 26px; box-shadow: 0 1px 2px rgba(30,45,47,.04); }
+.mhow-n { font-family: var(--serif); font-size: 30px; color: var(--terra); font-style: italic; }
+.mhow h3 { font-family: var(--serif); font-size: 22px; font-weight: 600; margin: 10px 0 8px; }
+.mhow p { margin: 0; color: var(--ink-2); font-size: 14.5px; line-height: 1.6; }
+
+/* ---- Otelciler için ---- */
+.mbiz { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: clamp(24px, 4vw, 56px); align-items: center; padding: clamp(28px, 5vw, 56px); border-radius: 30px; background: radial-gradient(600px 300px at 100% 0%, rgba(217,107,67,.22), transparent 70%), var(--ink); color: rgba(255,255,255,.78); }
+.mbiz h2 { color: #fff; font-size: clamp(28px, 3.6vw, 42px); line-height: 1.12; }
+.mbiz p { margin: 14px 0 24px; font-size: 15.5px; line-height: 1.65; }
+.mbiz p b { color: #fff; }
+.mbiz-nums { display: grid; gap: 12px; }
+.mbiz-nums div { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; border-radius: 18px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.08); }
+.mbiz-nums small { font-size: 13.5px; font-weight: 600; }
+.mbiz-nums strong { font-family: var(--serif); font-size: 30px; font-weight: 600; color: #fff; }
+.mbiz-nums .strike { text-decoration: line-through; text-decoration-thickness: 2px; opacity: .55; }
+.mbiz-nums .hl { background: var(--terra); border-color: transparent; color: #fff; }
+
+/* ---- Alt bilgi ---- */
+.mfoot { background: #172426; color: rgba(255,255,255,.62); padding-block: 44px calc(36px + env(safe-area-inset-bottom, 0px)); }
+.mfoot-in { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 22px 40px; }
+.mfoot .mlogo { color: #fff; }
+.mfoot p { margin: 6px 0 0; font-size: 14px; }
+.mfoot nav { display: flex; flex-wrap: wrap; gap: 8px 22px; }
+.mfoot nav a { color: rgba(255,255,255,.82); font-weight: 600; font-size: 14px; }
+.mfoot nav a:hover { color: #fff; }
+.mfoot-copy { flex-basis: 100%; font-size: 12.5px; color: rgba(255,255,255,.45); border-top: 1px solid rgba(255,255,255,.08); padding-top: 18px; }
+
+/* ---- Otel sayfası: sıcak tonlar ---- */
+.med .disc-band { background: linear-gradient(135deg, #f8eedb, #f1e1c3); color: #5c4622; border-bottom: 1px solid #e6d2ab; }
+.med .disc-band b, .med .disc-title { color: #7a4d17; }
+.med .disc-title { font-family: var(--serif); font-size: 19px; font-weight: 600; }
+.med .disc-txt > span { color: #5c4622; }
+.med .disc-ref { color: #7a6340; }
+.med .disc-in code { background: rgba(255,255,255,.7); color: #7a4d17; }
+.med .card { border-color: var(--line); }
+.med .gh-book { border-radius: 24px; box-shadow: 0 1px 2px rgba(30,45,47,.05), 0 24px 50px -30px rgba(30,45,47,.45); }
+.med .cf-policy { background: var(--sand); color: var(--ink-2); }
+.med .cf-policy b { color: var(--ink); }
+.med .cf-policy .ico, .med .cf-policy svg { color: var(--terra); }
+.pay-now { background: var(--terra-soft); color: var(--gold-ink); }
+.pay-later { background: #fff; }
+.med .modal-card { border-radius: 26px; }
+
+/* ---- Mobil ---- */
+@media (max-width: 860px) {
+  .mhow { grid-template-columns: 1fr; }
+  .mbiz { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .mnav-in { height: 62px; gap: 10px; }
+  .mlogo { font-size: 23px; }
+  .mnav-links { gap: 2px; }
+  .mnav-links a { font-size: 13px; padding: 8px 10px; }
+  .mnav-links a:first-child { display: none; }
+  .mhero { min-height: min(82vh, 700px); }
+  .mhero-in { padding-bottom: 92px; }
+  .regions { width: 100%; border-radius: 22px; }
+  .region { padding: 10px 16px; font-size: 14px; }
+  .amb { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; }
+  .amb-invite .mbtn { grid-column: 2; justify-self: start; margin-left: 0; }
+  .hcard-media { aspect-ratio: 5 / 4.6; }
+  .mfoot nav { width: 100%; }
+}
