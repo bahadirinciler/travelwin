@@ -65,7 +65,7 @@
   const amb = document.getElementById('amb');
   amb.innerHTML = ref
     ? `<span class="amb-ico">${ic('gift')}</span><p><b>${esc(refName || 'Elçimizin')} davetiyle geldiniz:</b> Tüm butik otellerde size özel %5 ayrıcalıklı fiyat aktif.${refName ? '' : ` <code>${esc(ref.toLocaleUpperCase('tr-TR'))}</code>`}</p>`
-    : `<span class="amb-ico">${ic('sparkles')}</span><p><b>Sevdiğin otelleri öner, kazan.</b> Elçi ol; tavsiyenle gelen her konaklamadan %5 nakit kazan.</p><a class="mbtn mbtn-ghost" href="app.html">Elçi Ol ${ic('arrow')}</a>`;
+    : `<span class="amb-ico">${ic('sparkles')}</span><p><b>Sen de arkadaşın gibi elçi ol,</b> hemen kazanmaya başla.</p><a class="mbtn mbtn-ghost" href="app.html">Elçi Ol ${ic('arrow')}</a>`;
   amb.classList.toggle('amb-invite', !ref);
   amb.hidden = false;
 
