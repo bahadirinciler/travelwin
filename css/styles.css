@@ -1353,3 +1353,24 @@ a.hcard:hover .hcard-media img { transform: scale(1.06); }
   .regions-inline { width: 100%; }
 }
 .steps-strip p.ss-ex { margin-top: 8px; padding: 6px 10px; border-radius: 10px; background: var(--terra-soft); color: var(--gold-ink); font-size: 12.5px; font-weight: 600; display: inline-block; }
+
+/* ---- v12.2: hero formül paneli ---- */
+.formula { display: inline-flex; flex-direction: column; gap: 10px; margin: 20px 0 28px; padding: 14px 16px; border-radius: 20px; background: rgba(16,26,28,.48); border: 1px solid rgba(255,255,255,.16); backdrop-filter: blur(10px) saturate(1.2); -webkit-backdrop-filter: blur(10px) saturate(1.2); max-width: 100%; }
+.f-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; }
+.f-lbl { width: 76px; flex: none; font-size: 11.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: rgba(255,255,255,.7); }
+.f-chip { display: inline-flex; align-items: baseline; gap: 7px; padding: 7px 13px; border-radius: 12px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.14); }
+.f-chip b { font-family: var(--serif); font-size: 26px; font-weight: 700; line-height: 1; color: #f7b48f; }
+.f-chip small { font-size: 13px; font-weight: 600; color: #fff; }
+.f-op { font-family: var(--serif); font-size: 24px; color: rgba(255,255,255,.65); }
+.f-hl { background: var(--terra); border-color: transparent; box-shadow: 0 12px 28px -12px rgba(217,107,67,.9); }
+.f-hl b { color: #fff; }
+@media (max-width: 600px) {
+  .formula { display: flex; padding: 12px; margin: 16px 0 22px; }
+  .f-lbl { width: 100%; }
+  .f-chip { padding: 6px 10px; }
+  .f-chip b { font-size: 21px; }
+  .f-chip small { font-size: 12px; }
+  .f-op { font-size: 20px; }
+}
+/* Playfair'in eski usul (aşağı sarkan) rakamları yerine düz rakamlar */
+h1, h2, h3, .mlogo, .f-chip b, .f-op, .steps-strip b, .ss-n, .mbiz-nums strong, .hcard h3, .disc-title { font-variant-numeric: lining-nums; font-feature-settings: "lnum" 1; }
