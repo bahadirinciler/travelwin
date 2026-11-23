@@ -1212,11 +1212,11 @@ h1, h2 { font-family: var(--serif); font-weight: 600; letter-spacing: -.005em; }
 /* ---- Sinematik açılış ---- */
 .mhero { position: relative; min-height: min(88vh, 780px); display: flex; align-items: flex-end; overflow: hidden; background: #2c3f42; }
 .mhero-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 60% 55%; }
-.mhero-shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(20,32,34,.55) 0%, rgba(20,32,34,0) 26%, rgba(20,32,34,0) 42%, rgba(20,32,34,.72) 100%); }
-.mhero-in { position: relative; width: 100%; padding-top: 120px; padding-bottom: clamp(84px, 11vw, 120px); color: #fff; }
+.mhero-shade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(16,26,28,.78) 0%, rgba(16,26,28,.55) 32%, rgba(16,26,28,.18) 62%, rgba(16,26,28,0) 82%), linear-gradient(0deg, rgba(16,26,28,.8) 0%, rgba(16,26,28,.35) 30%, rgba(16,26,28,0) 55%), linear-gradient(180deg, rgba(16,26,28,.5) 0%, rgba(16,26,28,0) 22%); }
+.mhero-in { position: relative; width: 100%; padding-top: 120px; padding-bottom: clamp(96px, 11vw, 132px); color: #fff; }
 .mhero-kicker { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; opacity: .9; margin-bottom: 14px; }
-.mhero h1 { font-size: clamp(38px, 6.2vw, 76px); line-height: 1.04; max-width: 14ch; text-shadow: 0 2px 24px rgba(0,0,0,.25); }
-.mhero p { margin: 18px 0 28px; font-size: clamp(16px, 1.6vw, 19px); line-height: 1.55; max-width: 46ch; opacity: .94; }
+.mhero h1 { font-size: clamp(36px, 5.4vw, 68px); line-height: 1.05; max-width: 15ch; text-shadow: 0 2px 24px rgba(0,0,0,.25); }
+.mhero p { margin: 18px 0 28px; font-size: clamp(15.5px, 1.45vw, 18px); line-height: 1.6; max-width: 62ch; opacity: .95; text-shadow: 0 1px 12px rgba(0,0,0,.3); }
 
 /* ---- Bölge filtresi ---- */
 .regions { position: relative; z-index: 3; margin: -32px auto 0; display: flex; gap: 6px; width: fit-content; max-width: 100%; overflow-x: auto; padding: 8px; background: #fff; border-radius: 999px; box-shadow: 0 18px 40px -20px rgba(30,45,47,.45), 0 0 0 1px rgba(30,45,47,.04); scrollbar-width: none; }
@@ -1239,7 +1239,6 @@ h1, h2 { font-family: var(--serif); font-weight: 600; letter-spacing: -.005em; }
 
 /* ---- Bölümler ---- */
 .msec { padding-block: clamp(52px, 7vw, 92px); }
-.msec-sand { background: var(--sand); }
 .msec-head { margin-bottom: clamp(24px, 3.4vw, 40px); }
 .msec-head h2 { font-size: clamp(30px, 4vw, 46px); line-height: 1.1; }
 .msec-head p { margin: 10px 0 0; color: var(--ink-2); font-size: 16px; }
@@ -1270,13 +1269,6 @@ a.hcard:hover .hcard-media img { transform: scale(1.06); }
 .hcard-price small { color: var(--ink-3); font-size: 13px; }
 .hcard-price.soon { font-family: var(--serif); font-style: italic; color: var(--ink-3); font-size: 15px; }
 .hcard.is-soon .hcard-media img { filter: saturate(.92); }
-
-/* ---- Nasıl çalışır (misafir) ---- */
-.mhow { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(16px, 2.4vw, 28px); }
-.mhow li { background: #fff; border-radius: 22px; padding: 28px 26px; box-shadow: 0 1px 2px rgba(30,45,47,.04); }
-.mhow-n { font-family: var(--serif); font-size: 30px; color: var(--terra); font-style: italic; }
-.mhow h3 { font-family: var(--serif); font-size: 22px; font-weight: 600; margin: 10px 0 8px; }
-.mhow p { margin: 0; color: var(--ink-2); font-size: 14.5px; line-height: 1.6; }
 
 /* ---- Otelciler için ---- */
 .mbiz { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: clamp(24px, 4vw, 56px); align-items: center; padding: clamp(28px, 5vw, 56px); border-radius: 30px; background: radial-gradient(600px 300px at 100% 0%, rgba(217,107,67,.22), transparent 70%), var(--ink); color: rgba(255,255,255,.78); }
@@ -1318,7 +1310,6 @@ a.hcard:hover .hcard-media img { transform: scale(1.06); }
 
 /* ---- Mobil ---- */
 @media (max-width: 860px) {
-  .mhow { grid-template-columns: 1fr; }
   .mbiz { grid-template-columns: 1fr; }
 }
 @media (max-width: 600px) {
@@ -1335,4 +1326,29 @@ a.hcard:hover .hcard-media img { transform: scale(1.06); }
   .amb-invite .mbtn { grid-column: 2; justify-self: start; margin-left: 0; }
   .hcard-media { aspect-ratio: 5 / 4.6; }
   .mfoot nav { width: 100%; }
+}
+
+/* ---- v12.1: hero butonları, 3 adım şeridi, satır içi bölge filtresi ---- */
+.visually-hidden { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.mhero-ctas { display: flex; flex-wrap: wrap; gap: 12px; }
+.mbtn-outline { color: #fff; border-color: rgba(255,255,255,.85); background: rgba(255,255,255,.06); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.mbtn-outline:hover { background: rgba(255,255,255,.16); }
+.steps-strip { position: relative; z-index: 3; list-style: none; margin: -48px 0 0; padding: 6px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); background: #fff; border-radius: 24px; box-shadow: 0 22px 48px -24px rgba(30,45,47,.45), 0 0 0 1px rgba(30,45,47,.04); }
+.steps-strip li { display: flex; gap: 14px; align-items: flex-start; padding: 18px 20px; }
+.steps-strip li + li { border-left: 1px solid var(--line); }
+.steps-strip b { display: block; font-family: var(--serif); font-size: 18px; font-weight: 600; color: var(--ink); line-height: 1.25; }
+.steps-strip p { margin: 5px 0 0; font-size: 13.5px; line-height: 1.5; color: var(--ink-2); }
+.ss-n { display: grid; place-items: center; width: 34px; height: 34px; flex: none; border-radius: 50%; background: var(--terra-soft); color: var(--terra); font-family: var(--serif); font-size: 17px; font-weight: 600; }
+.msec-head-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px 24px; flex-wrap: wrap; }
+.regions-inline { margin: 0; box-shadow: 0 0 0 1px var(--line); }
+@media (max-width: 860px) {
+  .steps-strip { grid-template-columns: 1fr; }
+  .steps-strip li + li { border-left: 0; border-top: 1px solid var(--line); }
+}
+@media (max-width: 600px) {
+  .mhero-ctas .mbtn { flex: 1 1 100%; justify-content: center; }
+  .mhero-shade { background: linear-gradient(0deg, rgba(16,26,28,.88) 0%, rgba(16,26,28,.62) 50%, rgba(16,26,28,.5) 100%); }
+  .steps-strip { margin-top: -36px; }
+  .steps-strip li { padding: 14px 14px; }
+  .regions-inline { width: 100%; }
 }
