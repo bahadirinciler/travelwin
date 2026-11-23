@@ -398,11 +398,12 @@
     },
 
     /** Misafir fiyatı: liste − %5 paylaşım indirimi (paylaşım jesti seçiliyse).
-        Ön ödeme = platform payı + (elçi linkiyle geldiyse) elçi payı; kalanı otelde ödenir. */
-    guestPrice(list, share, hasRef = true) {
+        Ön ödeme her zaman %10 (elçi payı + platform payı); kalanı otelde ödenir.
+        Elçisiz gelen misafirde elçi payı da Turizmlink'e kalır (misafir Turizmlink reklamıyla gelmiştir). */
+    guestPrice(list, share) {
       const discount = share ? pct(list, PRICING.GUEST) : 0;
       const total = list - discount;
-      const deposit = pct(list, PRICING.PLATFORM) + (hasRef ? pct(list, PRICING.CREATOR) : 0);
+      const deposit = pct(list, PRICING.PLATFORM) + pct(list, PRICING.CREATOR);
       return { list, discount, total, deposit, atHotel: total - deposit };
     },
 
@@ -414,10 +415,11 @@
       return { list, guest, creator, platform, net: list - guest - creator - platform };
     },
     commissionOf(app) { return DB.split(app).creator; },
-    /** Tek rezervasyonun dağılımı: elçi payı yalnızca ref koduyla gelen satışta; misafir indirimi paylaşım jestiyle. */
+    /** Tek rezervasyonun dağılımı: ön ödeme her zaman %10. Ref koduyla gelen satışta %5 elçiye,
+        elçisiz satışta o %5 de Turizmlink'e (reklam/pazarlama payı). */
     requestSplit(q) {
       const creator = q.code ? pct(q.list, PRICING.CREATOR) : 0;
-      const platform = pct(q.list, PRICING.PLATFORM);
+      const platform = pct(q.list, PRICING.PLATFORM) + (q.code ? 0 : pct(q.list, PRICING.CREATOR));
       const deposit = creator + platform; // online ön ödeme (Turizmlink tahsil eder)
       return { list: q.list, discount: q.discount || 0, paid: q.total, creator, platform, deposit, net: q.total - deposit };
     },

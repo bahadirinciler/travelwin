@@ -121,7 +121,7 @@
       if (g && g.season === n.season && g.price === n.price) g.count++;
       else groups.push({ season: n.season, price: n.price, count: 1 });
     });
-    return { nights: sq.nights.length, groups, persons, ...DB.guestPrice(sq.list, st.share, !!refCode) };
+    return { nights: sq.nights.length, groups, persons, ...DB.guestPrice(sq.list, st.share) };
   }
 
   /** Ödeme planı: şimdi online ön ödeme + girişte otele ödenecek kalan. */

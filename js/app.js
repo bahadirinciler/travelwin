@@ -492,7 +492,7 @@
           <div class="mc-tl-head"><b>Turizmlink toplam maliyet</b><strong>%${PRICING.TOTAL} · herkese eşit %5</strong></div>
           <ul>
             ${row(PRICING.GUEST, 'Misafir paylaşım indirimi', 'Misafire indirim jesti olur; karşılığında otelinize organik sosyal medya içeriği (UGC) üretir.')}
-            ${row(PRICING.CREATOR, 'Tavsiye komisyonu', 'Odayı sattıran elçiye / eski misafire gider. Satış yoksa maliyet sıfır.')}
+            ${row(PRICING.CREATOR, 'Tavsiye komisyonu', 'Odayı sattıran elçiye / eski misafire gider. Elçisiz gelen rezervasyonda bu pay, misafiri reklamla getiren Turizmlink\'e kalır.')}
             ${row(PRICING.PLATFORM, 'Turizmlink altyapı ve ödeme hizmeti', 'Online ön ödeme, link takibi ve kanal altyapısı.')}
           </ul>
         </div>
