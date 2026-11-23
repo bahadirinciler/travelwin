@@ -1212,7 +1212,7 @@ h1, h2 { font-family: var(--serif); font-weight: 600; letter-spacing: -.005em; }
 /* ---- Sinematik açılış ---- */
 .mhero { position: relative; min-height: min(88vh, 780px); display: flex; align-items: flex-end; overflow: hidden; background: #2c3f42; }
 .mhero-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 60% 55%; }
-.mhero-shade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(16,26,28,.78) 0%, rgba(16,26,28,.55) 32%, rgba(16,26,28,.18) 62%, rgba(16,26,28,0) 82%), linear-gradient(0deg, rgba(16,26,28,.8) 0%, rgba(16,26,28,.35) 30%, rgba(16,26,28,0) 55%), linear-gradient(180deg, rgba(16,26,28,.5) 0%, rgba(16,26,28,0) 22%); }
+.mhero-shade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(16,26,28,.88) 0%, rgba(16,26,28,.7) 35%, rgba(16,26,28,.34) 62%, rgba(16,26,28,.06) 85%), linear-gradient(0deg, rgba(16,26,28,.8) 0%, rgba(16,26,28,.35) 30%, rgba(16,26,28,0) 55%), linear-gradient(180deg, rgba(16,26,28,.5) 0%, rgba(16,26,28,0) 22%); }
 .mhero-in { position: relative; width: 100%; padding-top: 120px; padding-bottom: clamp(96px, 11vw, 132px); color: #fff; }
 .mhero-kicker { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; opacity: .9; margin-bottom: 14px; }
 .mhero h1 { font-size: clamp(36px, 5.4vw, 68px); line-height: 1.05; max-width: 15ch; text-shadow: 0 2px 24px rgba(0,0,0,.25); }
@@ -1347,7 +1347,7 @@ a.hcard:hover .hcard-media img { transform: scale(1.06); }
 }
 @media (max-width: 600px) {
   .mhero-ctas .mbtn { flex: 1 1 100%; justify-content: center; }
-  .mhero-shade { background: linear-gradient(0deg, rgba(16,26,28,.88) 0%, rgba(16,26,28,.62) 50%, rgba(16,26,28,.5) 100%); }
+  .mhero-shade { background: linear-gradient(0deg, rgba(16,26,28,.9) 0%, rgba(16,26,28,.7) 50%, rgba(16,26,28,.58) 100%); }
   .steps-strip { margin-top: -36px; }
   .steps-strip li { padding: 14px 14px; }
   .regions-inline { width: 100%; }
@@ -1374,3 +1374,8 @@ a.hcard:hover .hcard-media img { transform: scale(1.06); }
 }
 /* Playfair'in eski usul (aşağı sarkan) rakamları yerine düz rakamlar */
 h1, h2, h3, .mlogo, .f-chip b, .f-op, .steps-strip b, .ss-n, .mbiz-nums strong, .hcard h3, .disc-title { font-variant-numeric: lining-nums; font-feature-settings: "lnum" 1; }
+
+/* v12.3 — kapora alt etiketi */
+.f-stack { flex-wrap: wrap; row-gap: 4px; }
+.f-note { flex-basis: 100%; font-style: normal; font-size: 11.5px; font-weight: 600; letter-spacing: .01em; color: rgba(255,255,255,.82); }
+@media (max-width: 640px) { .f-note { font-size: 11px; } }
