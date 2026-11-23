@@ -1352,3 +1352,4 @@ a.hcard:hover .hcard-media img { transform: scale(1.06); }
   .steps-strip li { padding: 14px 14px; }
   .regions-inline { width: 100%; }
 }
+.steps-strip p.ss-ex { margin-top: 8px; padding: 6px 10px; border-radius: 10px; background: var(--terra-soft); color: var(--gold-ink); font-size: 12.5px; font-weight: 600; display: inline-block; }
