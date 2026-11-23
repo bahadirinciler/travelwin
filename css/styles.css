@@ -1418,3 +1418,18 @@ h1, h2, h3, .mlogo, .f-chip b, .f-op, .steps-strip b, .ss-n, .mbiz-nums strong, 
   .sc-card { scroll-snap-align: start; }
   .sc-actions { grid-template-columns: 1fr; }
 }
+
+/* v13.1 — önce paylaş, %5 indirim otomatik açılsın */
+.share-gate { display: flex; gap: 10px; align-items: flex-start; margin-top: 14px; padding: 12px 14px; border-radius: 14px; background: var(--terra-soft); border: 1px solid #f3d3c2; font-size: 13.5px; line-height: 1.5; color: var(--ink-2); }
+.share-gate svg { flex-shrink: 0; width: 18px; height: 18px; margin-top: 2px; color: var(--terra); }
+.share-gate p { margin: 0; }
+.share-gate b { color: var(--gold-ink); }
+.share-gate.on { background: #eef6f1; border-color: #cfe5d7; }
+.share-gate.on svg, .share-gate.on b { color: #2f7a55; }
+.sum-disc.sum-lock { opacity: .8; }
+.sum-disc.sum-lock b { font-weight: 600; }
+.sc-gain { display: inline-flex; align-self: flex-start; align-items: center; gap: 8px; padding: 9px 14px; border-radius: 999px; background: var(--terra); color: #fff; font-size: 14px; font-weight: 600; }
+.sc-gain svg { width: 16px; height: 16px; }
+.sc-gain b { font-family: var(--serif); font-size: 17px; font-variant-numeric: lining-nums; }
+.sc-skip { align-self: center; border: 0; background: none; padding: 6px 8px; font: inherit; font-size: 13px; font-weight: 600; color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.sc-skip:hover { color: var(--ink); }

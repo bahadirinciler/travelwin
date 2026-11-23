@@ -46,6 +46,8 @@
   const today = iso(new Date());
 
   /* ---------- Hangi otel, hangi elçi? ---------- */
+  const SHARED_KEY = () => `turizmlink:shared:${biz.id}`;
+  function sharedBefore() { try { return sessionStorage.getItem(SHARED_KEY()) === '1'; } catch (e) { return false; } }
   const params = new URLSearchParams(location.search);
   const code = DB.activeRef(); // URL ?ref= veya hafızadaki elçi kodu (30 gün)
   const app = code ? DB.byCode(code) : null;
@@ -72,7 +74,7 @@
   /* ---------- Paylaşım indirimi bandı ---------- */
   $band.innerHTML = `<div class="lwrap disc-in">
       <div class="disc-txt"><b class="disc-title">%${PRICING.GUEST} Paylaşım İndiriminiz Hazır! 🎁</b>
-        <span>Bu indirim, ister bir tavsiyeyle ister kendiniz gelin, tüm misafirlerimize hazırladığımız küçük bir tatil hediyesi. Karşılığında sizden tek ricamız: konaklamanız sırasında otelimizde kısa bir video çekip oteli etiketleyerek paylaşmanız. Anılarınız sizin, teşekkürümüz bu özel fiyat.</span>
+        <span>İster bir tavsiyeyle ister kendiniz gelin, tüm misafirlerimize küçük bir tatil hediyesi: rezervasyondan önce hazır tatil kartınızı hikâyenizde paylaşın, indiriminiz fiyatınıza anında işlensin. Konaklamanız sırasında kısa bir video da paylaşırsanız çok seviniriz. Anılarınız sizin, teşekkürümüz bu özel fiyat.</span>
         ${hasRef ? `<small class="disc-ref">✨ ${esc(genitive(creator.name))} tavsiyesiyle ${esc(locativeYou(biz.name))} · <code>${esc(code)}</code></small>` : ''}</div>
     </div>`;
   $band.hidden = false;
@@ -92,7 +94,7 @@
   }
   const st = {
     roomId: rooms[0]?.id,
-    checkIn: null, checkOut: null, guests: 2, kids: 0, share: true,
+    checkIn: null, checkOut: null, guests: 2, kids: 0, share: sharedBefore(),
     month: firstOpenMonth(),
   };
   const room = () => rooms.find((r) => r.id === st.roomId) || rooms[0];
@@ -185,11 +187,19 @@
         <div class="sum-list"><span>Otel liste fiyatı</span><b>${money(q.list)}</b></div>
         ${q.groups.map((g) => `<div class="sum-note"><span>${g.season ? `${seasonLabel(g.season)} · ` : ''}${g.count} gece × ${money(g.price)}</span></div>`).join('')}
         ${biz.pricing && q.persons !== 2 ? `<div class="sum-note"><span>${q.persons === 1 ? `Tek kişi: gecelik −${money(biz.pricing.single)} dahil` : `${q.persons} kişi: gecelik +${money((q.persons - 2) * biz.pricing.extra)} dahil`}${st.kids ? ` · ${st.kids} çocuk (0–6 yaş) ücretsiz` : ''}</span></div>` : st.kids ? `<div class="sum-note"><span>${st.kids} çocuk (0–6 yaş) ücretsiz</span></div>` : ''}
-        ${q.discount ? `<div class="sum-disc"><span>${ic('gift')} Paylaşım indirimi (%${PRICING.GUEST})</span><b>− ${money(q.discount)}</b></div>` : ''}
+        ${q.discount ? `<div class="sum-disc"><span>${ic('gift')} Paylaşım indirimi (%${PRICING.GUEST})</span><b>− ${money(q.discount)}</b></div>`
+          : `<div class="sum-disc sum-lock"><span>${ic('gift')} Paylaşınca açılacak indirim (%${PRICING.GUEST})</span><b>− ${money(DB.guestPrice(q.list, true).discount)}</b></div>`}
         <div class="sum-total"><span>${q.discount ? 'Toplam indirimli konaklama tutarı' : 'Toplam konaklama tutarı'}</span><b>${money(q.total)}</b></div>
       </div>
       ${payHtml(q)}`;
   }
+
+  function shareGateHtml() {
+    return st.share
+      ? `<div class="share-gate on">${ic('check')}<p><b>Paylaşım hediyen aktif.</b> %${PRICING.GUEST} indirim fiyatına işlendi. Konaklaman sırasında kısa bir video paylaşırsan çok seviniriz.</p></div>`
+      : `<div class="share-gate">${ic('gift')}<p><b>%${PRICING.GUEST} indirimini paylaşarak aç.</b> Bir sonraki adımda hazır tatil kartını hikâyende paylaş; indirim fiyatına anında işlensin.</p></div>`;
+  }
+  const bookLabel = (q) => (!st.share ? `Paylaş, %${PRICING.GUEST} İndirimle Devam Et` : q ? `${money(q.deposit)} Ön Ödeme ile Yerini Ayırt` : 'Ön Ödeme ile Yerini Ayırt');
 
   /** Oda kartı fiyatı: tarih seçiliyse o konaklamanın gecelik ortalaması, değilse en düşük sezon fiyatı. */
   function roomPriceHtml(x) {
@@ -197,8 +207,8 @@
     let list, label;
     if (q) { list = Math.round(q.list / q.nights); label = q.groups.length > 1 ? '/ gece (ort.)' : '/ gece'; }
     else { list = DB.fromPrice(biz, x); label = biz.pricing ? "/ gece'den · 2 kişi" : '/ gece'; }
-    const net = DB.guestPrice(list, st.share).total;
-    return `<span class="gh-room-price" data-rp="${x.id}">${st.share ? `<s>${money(list)}</s>` : ''}<b>${money(net)}</b><small>${label}</small></span>`;
+    const net = DB.guestPrice(list, true).total; // paylaşım fiyatı (vitrin)
+    return `<span class="gh-room-price" data-rp="${x.id}"><s>${money(list)}</s><b>${money(net)}</b><small>${label}</small></span>`;
   }
 
   /** Seçili odanın sezon fiyat tablosu (2 kişi, gecelik). */
@@ -273,8 +283,8 @@
               <div class="field full"><label for="g-name">Ad soyad</label><input class="input" id="g-name" name="guestName" autocomplete="name" required placeholder="Adınız ve soyadınız" /></div>
               <div class="field full"><label for="g-email">E-posta</label><input class="input" id="g-email" name="email" type="email" autocomplete="email" required placeholder="ornek@eposta.com" /></div>
             </div>
-            <label class="share-check"><input type="checkbox" id="g-share" ${st.share ? 'checked' : ''} /><span>Konaklamam sırasında otelde kısa bir video çekip oteli etiketleyerek sosyal medyada paylaşmaktan mutluluk duyarım. <b>%${PRICING.GUEST} indirimli fiyatımı onayla.</b></span></label>
-            <button class="btn btn-accent btn-block btn-book" type="submit">${ic('lock')} <span class="book-label">Ön Ödeme ile Yerini Ayırt</span></button>
+            <div id="shareGate">${shareGateHtml()}</div>
+            <button class="btn btn-accent btn-block btn-book" type="submit">${ic('lock')} <span class="book-label">${bookLabel(quote())}</span></button>
             <p class="gh-note">${ic('shield')} Şimdi ödeme alınmaz. Kartınızdan çekim, otel talebinizi onayladıktan sonra yapılır.</p>
           </form>
         </aside>
@@ -284,7 +294,9 @@
   function refreshPrices() {
     document.getElementById('sumWrap').innerHTML = summaryHtml();
     const q = quote(), lbl = $root.querySelector('.book-label');
-    if (lbl) lbl.textContent = q ? `${money(q.deposit)} Ön Ödeme ile Yerini Ayırt` : 'Ön Ödeme ile Yerini Ayırt';
+    if (lbl) lbl.textContent = bookLabel(q);
+    const gate = document.getElementById('shareGate');
+    if (gate) gate.innerHTML = shareGateHtml();
     $root.querySelectorAll('[data-rp]').forEach((el) => { el.outerHTML = roomPriceHtml(rooms.find((x) => x.id === el.dataset.rp)); });
   }
   function refreshBooking() {
@@ -445,12 +457,28 @@
   const bizProvince = (biz.address || '').split('/').pop().trim();
   let share = null; // { code, link, text, tpl, canvases, blobs }
 
-  function shareHtml(sh) {
+  function shareHtml(sh, mode) {
+    const gate = mode === 'gate';
+    const gain = gate && pending ? DB.guestPrice(pending.quote.list, true).discount : 0;
+    if (mode === 'compact') return `
+      <section class="sc" aria-labelledby="scTitle">
+        <span class="sc-kicker">${ic('check')} Davet linkin aktif</span>
+        <h3 id="scTitle">Paylaştıkça kazanmaya devam et.</h3>
+        <p class="sc-sub">Linkinle gelen arkadaşların %${PRICING.GUEST} indirim alır; sen de onların konaklamasından %${PRICING.CREATOR} nakit kazanırsın.</p>
+        <div class="sc-link">
+          <input class="input" readonly value="${esc(sh.link)}" aria-label="Kişisel davet linkin" />
+          <button type="button" class="mbtn mbtn-ink" data-sc="copy">${ic('copy')} Linki Kopyala</button>
+        </div>
+        ${step2Html()}
+      </section>`;
     return `
       <section class="sc" aria-labelledby="scTitle">
-        <span class="sc-kicker">${ic('gift')} 1. Kazanç Adımı · Paylaşım kartın hazır</span>
-        <h3 id="scTitle">Bekle bizi, ${esc(biz.name)}! Şimdi sevdiklerine haber ver.</h3>
-        <p class="sc-sub">Bu senin kişisel davet linkin. Linkinle gelen arkadaşların anında %${PRICING.GUEST} indirim kazanır; sen de onların konaklamasından %${PRICING.CREATOR} nakit kazanırsın.</p>
+        <span class="sc-kicker">${ic('gift')} ${gate ? `1. Adım · Paylaşım hediyesi` : '1. Kazanç Adımı · Paylaşım kartın hazır'}</span>
+        <h3 id="scTitle">${gate ? `Bekle bizi, ${esc(biz.name)}! Paylaş, %${PRICING.GUEST} indirimin anında açılsın.` : `Bekle bizi, ${esc(biz.name)}! Şimdi sevdiklerine haber ver.`}</h3>
+        <p class="sc-sub">${gate
+          ? `Hazır tatil kartını seç, hikâyende ya da WhatsApp'ta paylaş; indirim rezervasyonuna kendiliğinden işlensin. Kartta senin kişisel davet linkin var: linkinle gelen arkadaşların da %${PRICING.GUEST} indirim alır, sen de onların konaklamasından %${PRICING.CREATOR} nakit kazanırsın.`
+          : `Bu senin kişisel davet linkin. Linkinle gelen arkadaşların anında %${PRICING.GUEST} indirim kazanır; sen de onların konaklamasından %${PRICING.CREATOR} nakit kazanırsın.`}</p>
+        ${gain ? `<div class="sc-gain">${ic('gift')} Paylaşınca bu konaklamada <b>${money(gain)}</b> indirim</div>` : ''}
         <div class="sc-link">
           <input class="input" readonly value="${esc(sh.link)}" aria-label="Kişisel davet linkin" />
           <button type="button" class="mbtn mbtn-ink" data-sc="copy">${ic('copy')} Linki Kopyala</button>
@@ -466,8 +494,46 @@
           <button type="button" class="mbtn mbtn-cta" data-sc="download">${ic('download')} Hikâye Görselini İndir</button>
           <button type="button" class="mbtn mbtn-line" data-sc="share">${ic('send')} WhatsApp / Instagram'da Paylaş</button>
         </div>
-        <div class="sc-step2">${ic('sparkles')}<p><b>2. Kazanç Adımı:</b> Otele giriş yaptığınızda kendi çektiğiniz fotoğraf veya videoyu bu linkle paylaştığınızda, linkinizden gelen her arkadaşınızdan %${PRICING.CREATOR} nakit komisyon kazanır; biriken bakiyenizle sonraki tatilinizi %100 bedavaya getirebilirsiniz.</p></div>
+        ${gate ? `<button type="button" class="sc-skip" data-sc="skip">Paylaşmadan, indirimsiz devam et</button>` : step2Html()}
       </section>`;
+  }
+  const step2Html = () => `<div class="sc-step2">${ic('sparkles')}<p><b>2. Kazanç Adımı:</b> Otele giriş yaptığınızda kendi çektiğiniz fotoğraf veya videoyu bu linkle paylaştığınızda, linkinizden gelen her arkadaşınızdan %${PRICING.CREATOR} nakit komisyon kazanır; biriken bakiyenizle sonraki tatilinizi %100 bedavaya getirebilirsiniz.</p></div>`;
+
+  function ensureShare(name, email) {
+    if (!window.TLStory) return;
+    const myCode = TLStory.codeFor(name, email);
+    if (share && share.code === myCode) return;
+    const link = `https://turizmlink.com/?ref=${myCode}`;
+    share = {
+      code: myCode, link, tpl: 'klasik', canvases: {}, blobs: {},
+      text: `Bekle bizi ${biz.name}! 🌿 Turizmlink üzerinden yerimizi ayırttık. Sen de benim davet linkimle rezervasyon yaparsan anında %${PRICING.GUEST} indirim kazanıyorsun: ${link}`,
+    };
+    try { localStorage.setItem('turizmlink:mycode', JSON.stringify({ code: myCode, at: Date.now() })); } catch (e) { /* yoksay */ }
+  }
+  function gateHtml() {
+    return `<div class="modal-body done-body">
+        <button class="modal-close done-close" data-close aria-label="Kapat">${ic('x')}</button>
+        ${shareHtml(share, 'gate')}
+      </div>`;
+  }
+  function openGate() {
+    openModal(gateHtml());
+    $modalCard.classList.add('modal-wide');
+    mountShare();
+  }
+  function toConfirm() {
+    if (!pending) return;
+    pending.quote = quote();
+    openModal(confirmHtml());
+  }
+  // Paylaşım yapıldı (paylaşım menüsü / görsel indirme / metin kopyalama) → %5 indirim açılır.
+  function unlockDiscount(msg) {
+    if (st.share) return;
+    st.share = true;
+    try { sessionStorage.setItem(SHARED_KEY(), '1'); } catch (e) { /* yoksay */ }
+    refreshPrices();
+    toast(msg || `🎉 %${PRICING.GUEST} indirimin açıldı!`);
+    if (pending && !$modal.hidden) setTimeout(toConfirm, 900);
   }
 
   async function mountShare() {
@@ -480,12 +546,12 @@
     const sh = share;
     for (const t of TLStory.TEMPLATES) {
       try {
-        const cv = await TLStory.render(t.id, d);
+        const cv = sh.canvases[t.id] || await TLStory.render(t.id, d);
         if (share !== sh) return;
         sh.canvases[t.id] = cv;
         const fr = $modalCard.querySelector(`[data-frame="${t.id}"]`);
         if (fr) { fr.innerHTML = ''; fr.appendChild(cv); }
-        sh.blobs[t.id] = TLStory.toBlob(cv);
+        sh.blobs[t.id] ||= TLStory.toBlob(cv);
       } catch (e) { console.error('Hikâye kartı:', e); }
     }
   }
@@ -509,7 +575,8 @@
         const a = Object.assign(document.createElement('a'), { href: url, download: fileName });
         document.body.appendChild(a); a.click(); a.remove();
         setTimeout(() => URL.revokeObjectURL(url), 4000);
-        toast('Hikâye görselin indirildi');
+        if (!st.share && pending) unlockDiscount(`Görselin indirildi, %${PRICING.GUEST} indirimin açıldı 🎉 Hikâyene eklemeyi unutma!`);
+        else toast('Hikâye görselin indirildi');
         break;
       }
       case 'share': {
@@ -519,12 +586,18 @@
           if (file && navigator.canShare?.({ files: [file] })) await navigator.share({ files: [file], text: share.text });
           else if (navigator.share) await navigator.share({ text: share.text });
           else throw new Error('paylaşım menüsü yok');
+          if (pending) unlockDiscount();
         } catch (err) {
           if (err?.name === 'AbortError') return;
-          toast((await copyText(share.text)) ? 'Paylaşım metni kopyalandı; WhatsApp veya Instagram\'a yapıştırabilirsin.' : 'Paylaşım şu an açılamadı.');
+          const ok = await copyText(share.text);
+          if (ok && pending) unlockDiscount(`Paylaşım metni kopyalandı, %${PRICING.GUEST} indirimin açıldı 🎉 WhatsApp veya Instagram'a yapıştırabilirsin.`);
+          else toast(ok ? 'Paylaşım metni kopyalandı; WhatsApp veya Instagram\'a yapıştırabilirsin.' : 'Paylaşım şu an açılamadı.');
         }
         break;
       }
+      case 'skip':
+        toConfirm();
+        break;
     }
   });
 
@@ -538,7 +611,7 @@
         <div class="gh-done-total">${money(req.total)}${req.discount ? `<small>${money(req.discount)} paylaşım indirimi dahil</small>` : ''}</div>
         ${payHtml(req)}
         <div class="cf-policy">${ic('clock')}<p>Otelimiz talebinizi <b>2 saat içinde</b> onaylayacak; onay sonrası kartınızdan <b>${money(req.deposit)} ön ödeme</b> çekilecek ve <b>${esc(req.phone)}</b> numarasına bilgi verilecek. Kalan <b>${money(req.atHotel)}</b> girişte otele ödenir.</p></div>
-        ${share ? shareHtml(share) : ''}
+        ${share ? shareHtml(share, req.discount ? 'compact' : 'done') : ''}
         <a class="btn btn-ghost btn-block" href="app.html">${ic('sparkles')} Kazancını elçi panelinden takip et ${ic('arrow')}</a>
       </div>`;
   }
@@ -554,7 +627,9 @@
     if (!name || !phone) { toast('Ad soyad ve telefon gerekli.'); (name ? f.phone : f.guestName).focus(); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast('Lütfen geçerli bir e-posta adresi girin.'); f.email.focus(); return; }
     pending = { name, phone, email, guests: q.persons, kids: st.kids, quote: q };
-    openModal(confirmHtml());
+    ensureShare(name, email);
+    if (!st.share && share) openGate();
+    else openModal(confirmHtml());
   });
 
   // Kart alanları: basit biçimlendirme
@@ -613,16 +688,7 @@
       list: q.list, discount: q.discount, total: q.total, deposit: q.deposit, atHotel: q.atHotel, share: st.share,
     });
     pending = null;
-    // Misafirin kişisel elçi linki (ad soyad + e-postadan, her seferinde aynı)
-    if (window.TLStory) {
-      const myCode = TLStory.codeFor(name, email);
-      const link = `https://turizmlink.com/?ref=${myCode}`;
-      share = {
-        code: myCode, link, tpl: 'klasik', canvases: {}, blobs: {},
-        text: `Bekle bizi ${biz.name}! 🌿 Turizmlink üzerinden yerimizi ayırttık. Sen de benim davet linkimle rezervasyon yaparsan anında %${PRICING.GUEST} indirim kazanıyorsun: ${link}`,
-      };
-      try { localStorage.setItem('turizmlink:mycode', JSON.stringify({ code: myCode, at: Date.now() })); } catch (e) { /* yoksay */ }
-    }
+    ensureShare(name, email); // kişisel elçi linki (ad soyad + e-postadan, her seferinde aynı)
     $modalCard.innerHTML = doneHtml(req);
     $modalCard.classList.add('modal-wide');
     mountShare();
